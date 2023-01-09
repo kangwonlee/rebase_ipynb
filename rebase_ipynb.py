@@ -21,9 +21,21 @@ import subprocess
 
 
 def process_ipynb(src_path:pathlib.Path):
+    """
+    rewrite ipynb file using `jupyter nbconver --to notebook`
+    """
     assert src_path.exists()
     assert src_path.is_file()
     assert src_path.suffix == '.ipynb'
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir = pathlib.Path(tmpdir)
+
+        src_after_ipynb_path = tmpdir / (src_path.name)
+
+        remove_colab_button(src_path, src_after_ipynb_path)
+
+        subprocess.run(['jupyter', 'nbconvert', "--to", "notebook", str(src_after_ipynb_path), "--output", str(src_path)])
 
 
 def verify_processed_ipynb__without_colab_links(src_before_ipynb_path:pathlib.Path, dest_before_ipynb_path:pathlib.Path) -> bool:
