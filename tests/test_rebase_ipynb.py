@@ -7,7 +7,7 @@ import pytest
 proj_folder = pathlib.Path(__file__).parent.absolute()
 assert proj_folder.exists()
 assert proj_folder.is_dir()
-assert "tests" in proj_folder.glob()
+assert "tests" in proj_folder.glob('*')
 
 sys.path.insert(0,
     str(proj_folder)
