@@ -27,10 +27,8 @@ def verify_processed_ipynb(src_ipynb_path:pathlib.Path, dest_ipynb_path:pathlib.
 
     with tempfile.TemporaryDirectory() as tmpdir:
         tmpdir = pathlib.Path(tmpdir)
-        src_py_path = tmpdir / src_ipynb_path.name
-        src_py_path.suffix = '.py'
-        dest_py_path = tmpdir / dest_ipynb_path.name
-        dest_py_path.suffix = '.py'
+        src_py_path = tmpdir / (src_ipynb_path.stem + '.py')
+        dest_py_path = tmpdir / (dest_ipynb_path.stem + '.py')
 
         subprocess.run(['jupyter', 'nbconvert', "--to", "python", str(src_ipynb_path), "--output", str(src_py_path)])
         subprocess.run(['jupyter', 'nbconvert', "--to", "python", str(dest_ipynb_path), "--output", str(dest_py_path)])
