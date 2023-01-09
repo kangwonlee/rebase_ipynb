@@ -3,7 +3,7 @@ import sys
 
 import pytest
 
-proj_folder = pathlib.Path(__file__).parent.absolute()
+proj_folder = pathlib.Path(__file__).parent.parent.absolute()
 assert proj_folder.exists(), proj_folder.absolute()
 assert proj_folder.is_dir(), proj_folder.absolute()
 
