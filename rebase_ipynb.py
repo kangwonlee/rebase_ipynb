@@ -33,6 +33,12 @@ def verify_processed_ipynb(src_ipynb_path:pathlib.Path, dest_ipynb_path:pathlib.
         subprocess.run(['jupyter', 'nbconvert', "--to", "python", str(src_ipynb_path), "--output", str(src_py_path)])
         subprocess.run(['jupyter', 'nbconvert', "--to", "python", str(dest_ipynb_path), "--output", str(dest_py_path)])
 
+        assert src_py_path.exists()
+        assert src_py_path.is_file()
+
+        assert dest_py_path.exists()
+        assert dest_py_path.is_file()
+
         txt1 = src_py_path.read_text()
         txt2 = dest_py_path.read_text()
 
