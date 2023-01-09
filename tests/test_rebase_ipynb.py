@@ -4,12 +4,12 @@ import sys
 import pytest
 
 proj_folder = pathlib.Path(__file__).parent.absolute()
-assert proj_folder.exists()
-assert proj_folder.is_dir()
+assert proj_folder.exists(), proj_folder.absolute()
+assert proj_folder.is_dir(), proj_folder.absolute()
 
 test_folder = proj_folder / 'tests'
-assert test_folder.exists()
-assert test_folder.is_dir()
+assert test_folder.exists(), test_folder.absolute()
+assert test_folder.is_dir(), test_folder.absolute()
 
 sys.path.insert(0,
     str(proj_folder)
