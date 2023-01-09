@@ -19,13 +19,13 @@ sys.path.insert(0,
 import rebase_ipynb
 
 
-def test_verify_processed_ipynb__equal():
+def test_verify_processed_ipynb__equal_with_button():
     src_ipynb_path = test_folder / 'eq_colab.ipynb'
     assert src_ipynb_path.exists()
     assert src_ipynb_path.is_file()
     assert src_ipynb_path.suffix == '.ipynb'
 
-    dest_ipynb_path = test_folder / 'eq_local.ipynb'
+    dest_ipynb_path = test_folder / 'eq_local_with_button.ipynb'
     assert dest_ipynb_path.exists()
     assert dest_ipynb_path.is_file()
     assert dest_ipynb_path.suffix == '.ipynb'
@@ -39,7 +39,7 @@ def test_verify_processed_ipynb__not_equal():
     assert src_ipynb_path.is_file()
     assert src_ipynb_path.suffix == '.ipynb'
 
-    dest_ipynb_path = test_folder / 'eq_local.ipynb'
+    dest_ipynb_path = test_folder / 'eq_local_with_button.ipynb'
     assert dest_ipynb_path.exists()
     assert dest_ipynb_path.is_file()
     assert dest_ipynb_path.suffix == '.ipynb'
