@@ -1,5 +1,17 @@
 """
 Unify ipynb format
+
+Input
+=====
+    * first commit
+    * last commit
+    * temporary branch name
+
+Result
+======
+    * temporary branch with all ipynb files in the unified format
+    * remove all hash info
+
 """
 
 import json
