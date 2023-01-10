@@ -21,6 +21,17 @@ import tempfile
 import subprocess
 
 
+# TODO : find the repo folder
+# TODO : get the git log from the first to the last
+# TODO : get the list of files changed in each commit
+# TODO : get the commit prior to the first commit
+# TODO : start the temporary branch
+# TODO : checkout each commit
+# TODO : process the ipynb files
+# TODO : add commit
+# TODO : go checkout the next commit
+
+
 def process_ipynb(src_path:pathlib.Path):
     """
     rewrite ipynb file using `jupyter nbconver --to notebook`
