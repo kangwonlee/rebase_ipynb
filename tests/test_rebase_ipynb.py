@@ -1,8 +1,10 @@
+import json
 import pathlib
 import sys
 import tempfile
 
 import pytest
+
 
 proj_folder = pathlib.Path(__file__).parent.parent.absolute()
 
@@ -83,6 +85,42 @@ def test_remove_colab_button__eq_local():
         rebase_ipynb.remove_colab_button(src_ipynb_path, dest_ipynb_path)
 
         assert rebase_ipynb.verify_processed_ipynb(dest_ipynb_path, ref_ipynb_path)
+
+
+def test_remove_metadata_id__eq_local():
+    src_ipynb_path = test_folder / 'eq_local_without_button.ipynb'
+    assert src_ipynb_path.exists()
+    assert src_ipynb_path.is_file()
+    assert src_ipynb_path.suffix == '.ipynb'
+
+    src_ipynb_json = json.loads(src_ipynb_path.read_text())
+    # has hash values?
+
+    result = False
+    for cell in src_ipynb_json["cells"]:
+        if "metadata" in cell:
+            if "id" in cell["metadata"]:
+                result = True
+
+    assert result, "no hash values found in source ipynb file"
+
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = pathlib.Path(tmpdir)
+
+        dest_ipynb_path = tmpdir_path / 'eq_local_with_button.ipynb'
+
+        rebase_ipynb.remove_metadata_id(src_ipynb_path, dest_ipynb_path)
+
+        dest_ipynb_json = json.loads(dest_ipynb_path.read_text())
+
+        # still has hash values?
+        for cell in dest_ipynb_json["cells"]:
+            if "metadata" in cell:
+                assert "id" not in cell["metadata"], cell
+
+        # content changes?
+        assert rebase_ipynb.verify_processed_ipynb(dest_ipynb_path, src_ipynb_path)
 
 
 if '__main__' == __name__:

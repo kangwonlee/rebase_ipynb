@@ -39,6 +39,18 @@ def process_ipynb(src_path:pathlib.Path):
         subprocess.run(['jupyter', 'nbconvert', "--to", "notebook", str(src_after_ipynb_path), "--output", str(src_path)])
 
 
+def remove_metadata_id(src_path:pathlib.Path, dest_path:pathlib.Path):
+    ipynb_json = json.loads(src_path.read_text())
+
+    for cell in ipynb_json["cells"]:
+        if "metadata" in cell:
+            if "id" in cell["metadata"]:
+                del cell["metadata"]["id"]
+
+    with dest_path.open('w') as f:
+        json.dump(ipynb_json, f)
+
+
 def verify_processed_ipynb__without_colab_links(src_before_ipynb_path:pathlib.Path, dest_before_ipynb_path:pathlib.Path) -> bool:
     """
     After removing the possible top link,
