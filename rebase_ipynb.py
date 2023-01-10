@@ -15,10 +15,13 @@ Result
 
 """
 
+import argparse
 import json
 import pathlib
 import tempfile
 import subprocess
+
+from typing import List
 
 
 # TODO : find the repo folder
@@ -30,6 +33,29 @@ import subprocess
 # TODO : process the ipynb files
 # TODO : add commit
 # TODO : go checkout the next commit
+
+
+def parse_argv(argv:List[str]) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Unify ipynb format")
+
+    parser.add_argument(
+        "-r", "--repo", type=str, required=True,
+        help="repository folder"
+    )
+    parser.add_argument(
+        "-f", "--first", type=str, required=True,
+        help="first commit"
+    )
+    parser.add_argument(
+        "-l", "--last", type=str, required=True,
+        help="last commit"
+    )
+    parser.add_argument(
+        "-b", "--branch", type=str, required=True,
+        help="temporary branch name"
+    )
+
+    return parser.parse_args(argv)
 
 
 def process_ipynb(src_path:pathlib.Path):
