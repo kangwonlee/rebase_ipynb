@@ -24,9 +24,6 @@ import subprocess
 from typing import List, Tuple
 
 
-# TODO : find the repo folder
-# TODO : get the git log from the first to the last
-# TODO : get the list of files changed in each commit
 # TODO : get the commit prior to the first commit
 # TODO : start the temporary branch
 # TODO : checkout each commit
@@ -75,6 +72,15 @@ def get_git_log(repo:pathlib.Path, start:str, end:str) -> Tuple[str]:
     return tuple(
         subprocess.check_output(
             ['git', 'log', '--reverse', '--pretty=format:%H', f'{start}..{end}'],
+            cwd=repo, encoding='utf-8'
+        ).splitlines()
+    )
+
+
+def get_changed_files(repo:pathlib.Path, commit:str) -> Tuple[str]:
+    return tuple(
+        subprocess.check_output(
+            ['git', 'diff-tree', '--no-commit-id', '--name-only', '-r', commit],
             cwd=repo, encoding='utf-8'
         ).splitlines()
     )
