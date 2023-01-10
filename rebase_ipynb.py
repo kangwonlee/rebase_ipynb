@@ -86,6 +86,26 @@ def get_changed_files(repo:pathlib.Path, commit:str) -> Tuple[str]:
     )
 
 
+def git_switch_c(repo:pathlib.Path, commit:str, branch:str):
+    subprocess.run(['git', 'switch', commit, '-c', branch], cwd=repo)
+
+
+def get_current_branch(repo:pathlib.Path) -> str:
+    return subprocess.check_output(
+        ['git', 'branch', '--show-current'],
+        cwd=repo, encoding='utf-8'
+    ).strip()
+
+
+def get_branch_list(repo:pathlib.Path) -> Tuple[str]:
+    return tuple(
+        subprocess.check_output(
+            ['git', 'branch'],
+            cwd=repo, encoding='utf-8'
+        ).splitlines()
+    )
+
+
 def process_ipynb(src_path:pathlib.Path):
     """
     rewrite ipynb file using `jupyter nbconver --to notebook`
