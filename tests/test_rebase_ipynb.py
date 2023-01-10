@@ -123,5 +123,21 @@ def test_remove_metadata_id__eq_local():
         assert rebase_ipynb.verify_processed_ipynb(dest_ipynb_path, src_ipynb_path)
 
 
+def test_get_git_log():
+    start = "dfecfb3"
+    end = "e00de3f"
+    result = rebase_ipynb.get_git_log(proj_folder, start, end)
+
+    assert isinstance(result, tuple)
+
+    set(result) == set((
+        '1bfd7a0a542f6401140bb81cac2614dd128f579e',
+        '56f552ffc89e7de4ba372d7357bf0194a1c5a0d3',
+        '96ae54de2fd152fa9dd7919f492a95744e5c45ff',
+        'da52480de58641c2b3c5b22f4b6aa59fe1d85952',
+        'e00de3f2d957986799abd533e13644152a31e80c',
+    ))
+
+
 if '__main__' == __name__:
     pytest.main([__file__])

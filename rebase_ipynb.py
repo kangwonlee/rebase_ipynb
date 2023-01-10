@@ -21,7 +21,7 @@ import pathlib
 import tempfile
 import subprocess
 
-from typing import List
+from typing import List, Tuple
 
 
 # TODO : find the repo folder
@@ -69,6 +69,15 @@ def get_repo_folder_path(parsed:argparse.Namespace) -> pathlib.Path:
     assert p.is_dir()
 
     return p
+
+
+def get_git_log(repo:pathlib.Path, start:str, end:str) -> Tuple[str]:
+    return tuple(
+        subprocess.check_output(
+            ['git', 'log', '--reverse', '--pretty=format:%H', f'{start}..{end}'],
+            cwd=repo, encoding='utf-8'
+        ).splitlines()
+    )
 
 
 def process_ipynb(src_path:pathlib.Path):
