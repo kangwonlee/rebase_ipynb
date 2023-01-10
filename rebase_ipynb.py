@@ -58,6 +58,19 @@ def parse_argv(argv:List[str]) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
+def get_repo_folder_path(parsed:argparse.Namespace) -> pathlib.Path:
+    p = pathlib.Path(parsed.repo).resolve(strict=True)
+
+    assert p.exists()
+    assert p.is_dir()
+
+    p_git = p / '.git'
+    assert p_git.exists()
+    assert p.is_dir()
+
+    return p
+
+
 def process_ipynb(src_path:pathlib.Path):
     """
     rewrite ipynb file using `jupyter nbconver --to notebook`
