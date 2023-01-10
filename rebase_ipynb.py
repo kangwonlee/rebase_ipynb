@@ -3,6 +3,7 @@ Unify ipynb format
 
 Input
 =====
+    * repository folder
     * first commit
     * last commit
     * temporary branch name
