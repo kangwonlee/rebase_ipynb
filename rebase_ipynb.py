@@ -38,6 +38,8 @@ def process_ipynb(src_path:pathlib.Path):
 
         subprocess.run(['jupyter', 'nbconvert', "--to", "notebook", str(src_after_ipynb_path), "--output", str(src_path)])
 
+    remove_metadata_id(src_path, src_path)
+
 
 def remove_metadata_id(src_path:pathlib.Path, dest_path:pathlib.Path):
     ipynb_json = json.loads(src_path.read_text())
