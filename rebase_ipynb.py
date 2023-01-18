@@ -18,20 +18,92 @@ Result
 import argparse
 import json
 import pathlib
+import shutil
 import tempfile
 import subprocess
 
 from typing import Dict, List, Tuple
 
 
-# TODO : get the commit prior to the first commit
-# TODO : start the temporary branch
-# TODO : checkout each commit
-# TODO : copy the changed files to a temporary folder
-# TODO : process the ipynb files
-# TODO : switch to the branch
-# TODO : add commit
-# TODO : go checkout the next commit
+def process_commits(repo:pathlib.Path, first_commit:str, last_commit:str, new_branch:str):
+    commit_list = get_git_log(repo=repo, start=first_commit, end=last_commit)
+
+    if first_commit not in commit_list:
+        commit_list.insert(0, first_commit)
+
+    start_temporary_branch_head(repo=repo, commit=first_commit, new_branch=new_branch)
+
+    for commit in commit_list:
+        process_a_commit(repo=repo, commit=commit, new_branch=new_branch)
+
+
+def process_a_commit(repo:pathlib.Path, commit:str, new_branch:str):
+    """
+    Checkout the commit
+    Get the commit info
+    Copy the changed files to a temporary folder
+    Process the ipynb files
+    Switch to the temporary branch
+    Add the changed files
+    """
+
+    git_checkout(repo=repo, commit=commit)
+
+    commit_info = get_commit_info(repo=repo, commit=commit)
+
+    changed_files = get_changed_files(repo=repo, commit=commit)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir = pathlib.Path(tmpdir)
+
+        for f in changed_files:
+            shutil.copy(repo / f, tmpdir / f)
+            if f.endswith('.ipynb'):
+                process_ipynb(tmpdir/f)
+
+        switch_to_temporary_branch(repo, new_branch)
+
+        for f in changed_files:
+            shutil.copy(tmpdir / f, repo / f)
+
+    git_add(repo=repo, files=changed_files)
+    git_commit(
+        repo=repo,
+        commit_info=commit_info
+    )
+
+
+def git_checkout(repo:pathlib.Path, commit:str):
+    git(get_checkout_cmd(commit), repo=repo)
+
+
+def git_add(repo:pathlib.Path, files:List[str]):
+    git(get_add_cmd(files), repo=repo)
+
+
+def git_commit(repo:pathlib.Path, commit_info:Dict[str, str]):
+    git(get_commit_cmd(commit_info), repo=repo)
+
+
+def git(cmd:List[str], repo:pathlib.Path) -> str:
+    return subprocess.check_output(cmd, cwd=repo, encoding='utf-8')
+
+
+def get_checkout_cmd(commit):
+    return ['git', 'checkout', commit]
+
+
+def get_add_cmd(files:List[str]) -> List[str]:
+    return ['git', 'add', *files]
+
+
+def get_commit_cmd(commit_info) -> List[str]:
+    return [
+        'git', 'commit',
+            '-m', commit_info["message"],
+            '--date', commit_info["date"],
+            '--author', f'{commit_info["author"]} <{commit_info["author_email"]}>'
+    ]
 
 
 def get_commit_info(repo:pathlib.Path, commit:str) -> Dict[str, str]:
@@ -159,10 +231,7 @@ def get_hash_log_cmd(start:str, end:str) -> List[str]:
 
 def get_changed_files(repo:pathlib.Path, commit:str) -> Tuple[str]:
     return tuple(
-        subprocess.check_output(
-            get_chg_files_cmd(commit),
-            cwd=repo, encoding='utf-8'
-        ).splitlines()
+        git(get_chg_files_cmd(commit), repo=repo).splitlines()
     )
 
 
@@ -171,14 +240,22 @@ def get_chg_files_cmd(commit:str) -> List[str]:
 
 
 def git_switch_c(repo:pathlib.Path, commit:str, branch:str):
-    subprocess.run(['git', 'switch', commit, '-c', branch], cwd=repo)
+    git(get_switch_c_cmd(commit, branch), repo=repo)
+
+
+def get_switch_c_cmd(commit:str, branch:str) -> List[str]:
+    return ['git', 'switch', commit, '-c', branch]
 
 
 def get_current_branch(repo:pathlib.Path) -> str:
-    return subprocess.check_output(
-        ['git', 'branch', '--show-current'],
-        cwd=repo, encoding='utf-8'
+    return git(
+        get_current_branch_cmd(),
+        repo=repo
     ).strip()
+
+
+def get_current_branch_cmd() -> List[str]:
+    return ['git', 'branch', '--show-current']
 
 
 def get_branch_list(repo:pathlib.Path) -> Tuple[str]:
@@ -205,9 +282,13 @@ def process_ipynb(src_path:pathlib.Path):
 
         remove_colab_button(src_path, src_after_ipynb_path)
 
-        subprocess.run(['jupyter', 'nbconvert', "--to", "notebook", str(src_after_ipynb_path), "--output", str(src_path)])
+        subprocess.run(get_nbconvert_ipynb_cmd(src_path, src_after_ipynb_path))
 
     remove_metadata_id(src_path, src_path)
+
+
+def get_nbconvert_ipynb_cmd(src_path:pathlib.Path, src_after_ipynb_path:pathlib.Path) -> List[str]:
+    return ['jupyter', 'nbconvert', "--to", "notebook", str(src_after_ipynb_path), "--output", str(src_path)]
 
 
 def remove_metadata_id(src_path:pathlib.Path, dest_path:pathlib.Path):
@@ -266,8 +347,8 @@ def verify_processed_ipynb(src_ipynb_path:pathlib.Path, dest_ipynb_path:pathlib.
         src_py_path = tmpdir / (src_ipynb_path.stem + '.py')
         dest_py_path = tmpdir / (dest_ipynb_path.stem + '.py')
 
-        subprocess.run(['jupyter', 'nbconvert', "--to", "python", str(src_ipynb_path), "--output", str(src_py_path)])
-        subprocess.run(['jupyter', 'nbconvert', "--to", "python", str(dest_ipynb_path), "--output", str(dest_py_path)])
+        subprocess.run(get_nbconvert_python_cmd(src_ipynb_path, src_py_path))
+        subprocess.run(get_nbconvert_python_cmd(dest_ipynb_path, dest_py_path))
 
         assert src_py_path.exists()
         assert src_py_path.is_file()
@@ -279,6 +360,10 @@ def verify_processed_ipynb(src_ipynb_path:pathlib.Path, dest_ipynb_path:pathlib.
         txt2 = dest_py_path.read_text()
 
     return txt1 == txt2
+
+
+def get_nbconvert_python_cmd(ipynb_path:pathlib.Path, py_path:pathlib.Path) -> List[str]:
+    return ['jupyter', 'nbconvert', "--to", "python", str(ipynb_path), "--output", str(py_path)]
 
 
 def remove_colab_button(src_ipynb_path:pathlib.Path, dest_ipynb_path:pathlib.Path):
