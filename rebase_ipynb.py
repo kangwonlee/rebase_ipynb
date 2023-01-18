@@ -101,7 +101,11 @@ def get_checkout_head_cmd(commit:str, new_branch:str) -> List[str]:
 def switch_to_temporary_branch(repo:pathlib.Path, branch:str):
     assert_git_repo(repo)
 
-    subprocess.run(['git', 'switch', branch], cwd=repo)
+    subprocess.run(get_switch_cmd(branch), cwd=repo)
+
+
+def get_switch_cmd(branch:str) -> List[str]:
+    return ['git', 'switch', branch]
 
 
 def parse_argv(argv:List[str]) -> argparse.Namespace:
@@ -143,19 +147,27 @@ def get_repo_folder_path(parsed:argparse.Namespace) -> pathlib.Path:
 def get_git_log(repo:pathlib.Path, start:str, end:str) -> Tuple[str]:
     return tuple(
         subprocess.check_output(
-            ['git', 'log', '--reverse', '--pretty=format:%H', f'{start}..{end}'],
+            get_hash_log_cmd(start, end),
             cwd=repo, encoding='utf-8'
         ).splitlines()
     )
+
+
+def get_hash_log_cmd(start:str, end:str) -> List[str]:
+    return ['git', 'log', '--reverse', '--pretty=format:%H', f'{start}..{end}']
 
 
 def get_changed_files(repo:pathlib.Path, commit:str) -> Tuple[str]:
     return tuple(
         subprocess.check_output(
-            ['git', 'diff-tree', '--no-commit-id', '--name-only', '-r', commit],
+            get_chg_files_cmd(commit),
             cwd=repo, encoding='utf-8'
         ).splitlines()
     )
+
+
+def get_chg_files_cmd(commit:str) -> List[str]:
+    return ['git', 'diff-tree', '--no-commit-id', '--name-only', '-r', commit]
 
 
 def git_switch_c(repo:pathlib.Path, commit:str, branch:str):
