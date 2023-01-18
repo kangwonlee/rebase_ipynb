@@ -32,7 +32,7 @@ from typing import List, Tuple
 # TODO : go checkout the next commit
 
 
-def start_temporary_branch(repo:pathlib.Path, branch:str):
+def assert_git_repo(repo:pathlib.Path) -> bool:
     assert repo.exists()
     assert repo.is_dir()
 
@@ -40,6 +40,10 @@ def start_temporary_branch(repo:pathlib.Path, branch:str):
 
     assert repo_git_path.exists()
     assert repo_git_path.is_dir()
+
+
+def start_temporary_branch(repo:pathlib.Path, branch:str):
+    assert_git_repo(repo)
 
     subprocess.run(['git', 'switch', '-c', branch], cwd=repo)
 
