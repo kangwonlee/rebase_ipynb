@@ -27,7 +27,9 @@ from typing import List, Tuple
 # TODO : get the commit prior to the first commit
 # TODO : start the temporary branch
 # TODO : checkout each commit
+# TODO : copy the changed files to a temporary folder
 # TODO : process the ipynb files
+# TODO : switch to the branch
 # TODO : add commit
 # TODO : go checkout the next commit
 
@@ -61,6 +63,12 @@ def start_temporary_branch(repo:pathlib.Path, branch:str):
     assert_git_repo(repo)
 
     subprocess.run(['git', 'switch', '-c', branch], cwd=repo)
+
+
+def switch_to_temporary_branch(repo:pathlib.Path, branch:str):
+    assert_git_repo(repo)
+
+    subprocess.run(['git', 'switch', branch], cwd=repo)
 
 
 def parse_argv(argv:List[str]) -> argparse.Namespace:
