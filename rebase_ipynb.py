@@ -42,6 +42,21 @@ def assert_git_repo(repo:pathlib.Path) -> bool:
     assert repo_git_path.is_dir()
 
 
+def checkout_head(repo:pathlib.Path, commit:str, new_branch:str=None):
+    assert_git_repo(repo)
+
+    subprocess.run(get_checkout_head_cmd(commit, new_branch), cwd=repo)
+
+
+def get_checkout_head_cmd(commit:str, new_branch:str) -> List[str]:
+    cmd = ['git', 'checkout', commit+'^']
+
+    if new_branch is not None:
+        cmd += ['-b', new_branch]
+
+    return cmd
+
+
 def start_temporary_branch(repo:pathlib.Path, branch:str):
     assert_git_repo(repo)
 

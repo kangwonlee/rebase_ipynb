@@ -46,6 +46,14 @@ def test_start_temporary_branch(repo:pathlib.Path):
     assert any(map(lambda s:s.endswith(new_branch_name), output_lines)), output_lines
 
 
+def test_get_checkout_head_cmd():
+    commit = '1234567890'
+    new_branch = 'rebase_ipynb_test'
+    result = rebase_ipynb.get_checkout_head_cmd(commit, new_branch)
+
+    assert result == f'git checkout {commit}^ -b {new_branch}'.split()
+
+
 def test_verify_processed_ipynb__without_colab_links__equal_with_button():
     src_ipynb_path = test_folder / 'eq_colab.ipynb'
     assert src_ipynb_path.exists()
