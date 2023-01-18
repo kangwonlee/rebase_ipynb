@@ -32,6 +32,18 @@ from typing import List, Tuple
 # TODO : go checkout the next commit
 
 
+def start_temporary_branch(repo:pathlib.Path, branch:str):
+    assert repo.exists()
+    assert repo.is_dir()
+
+    repo_git_path = repo / '.git'
+
+    assert repo_git_path.exists()
+    assert repo_git_path.is_dir()
+
+    subprocess.run(['git', 'switch', '-c', branch], cwd=repo)
+
+
 def parse_argv(argv:List[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Unify ipynb format")
 

@@ -1,10 +1,10 @@
 import json
 import pathlib
+import subprocess
 import sys
 import tempfile
 
 import pytest
-
 
 proj_folder = pathlib.Path(__file__).parent.parent.absolute()
 
@@ -22,6 +22,28 @@ sys.path.insert(0,
 
 
 import rebase_ipynb
+
+
+@pytest.fixture(scope='session')
+def repo() -> pathlib.Path:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir = pathlib.Path(tmpdir)
+        subprocess.run(['git', 'clone', 'https://github.com/kangwonlee/sieve'], cwd=tmpdir)
+
+        test_repo_path = tmpdir / 'sieve'
+
+        test_repo_git_path = test_repo_path / '.git'
+        assert test_repo_git_path.exists(), test_repo_path.absolute()
+
+        yield test_repo_path
+
+
+def test_start_temporary_branch(repo:pathlib.Path):
+    new_branch_name = 'rebase_ipynb_test'
+    rebase_ipynb.start_temporary_branch(repo, new_branch_name)
+    output = subprocess.check_output(['git', 'branch'], cwd=repo, encoding='utf-8')
+    output_lines = tuple(map(lambda s:s.strip(), output.splitlines()))
+    assert any(map(lambda s:s.endswith(new_branch_name), output_lines)), output_lines
 
 
 def test_verify_processed_ipynb__without_colab_links__equal_with_button():
