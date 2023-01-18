@@ -38,6 +38,41 @@ def repo() -> pathlib.Path:
         yield test_repo_path
 
 
+def test_get_commit_info_from_show():
+    git_show_msg = (
+        "commit c759024d70d6719b33cc8e10533f2bcdbcd18abe (HEAD -> temporary-branch)\n"
+        "Author: KangWon LEE <kangwon.lee@tukorea.ac.kr>\n"
+        "Date:   Wed Jan 18 20:57:54 2023 +0900\n"
+        "\n"
+        "    checkout_head() -> start_temporary_branch_head()\n"
+        "\n"
+        "    also removed start_temporary_branch() to avoid confusion\n"
+        "\n"
+        "    for this application, the original intention was\n"
+        "    to start the temporary branch at the HEAD of the first commit\n"
+        "\n"
+        " rebase_ipynb.py            |  8 +-------\n"
+        " tests/test_rebase_ipynb.py | 11 +++++++----\n"
+        " 2 files changed, 8 insertions(+), 11 deletions(-)\n"
+    )
+
+    result = rebase_ipynb.get_commit_info_from_show(git_show_msg)
+
+    assert isinstance(result, dict)
+
+    assert result['author'] == "KangWon LEE"
+    assert result['author_email'] == "kangwon.lee@tukorea.ac.kr"
+    assert result['date'] == "Wed Jan 18 20:57:54 2023 +0900"
+    assert result['message'] == (
+        "checkout_head() -> start_temporary_branch_head()\n"
+        "\n"
+        "also removed start_temporary_branch() to avoid confusion\n"
+        "\n"
+        "for this application, the original intention was\n"
+        "to start the temporary branch at the HEAD of the first commit\n"
+    )
+
+
 def test_start_temporary_branch_head__switch_to_temporary_branch(repo:pathlib.Path):
     new_branch_name = 'rebase_ipynb_test'
 

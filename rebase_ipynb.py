@@ -21,7 +21,7 @@ import pathlib
 import tempfile
 import subprocess
 
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 
 
 # TODO : get the commit prior to the first commit
@@ -32,6 +32,45 @@ from typing import List, Tuple
 # TODO : switch to the branch
 # TODO : add commit
 # TODO : go checkout the next commit
+
+
+def get_commit_info(repo:pathlib.Path, commit:str) -> Dict[str, str]:
+    return get_commit_info_from_show(
+        subprocess.check_output(
+            ['git', 'show', '--stat', commit],
+            cwd=repo, encoding='utf-8'
+        )
+    )
+
+def get_commit_info_from_show(output:str) -> Dict[str, str]:
+    lines = output.splitlines()
+
+    body = get_commit_message_body(lines)
+
+    result = {
+        "author": lines[1].split('Author:')[1].strip().split('<')[0].strip(),
+        "author_email": lines[1].split('<')[1].strip().strip('>'),
+        "date": lines[2].split('Date:')[1].strip(),
+        'message': body,
+    }
+
+    return result
+
+
+def get_commit_message_body(lines:List[str]) -> str:
+    last_line = lines[-1].strip()
+    n_files_str = last_line.split('files')[0].strip()
+    assert n_files_str.isnumeric(), (last_line, last_line.split('files'))
+
+    n_files = int(n_files_str)
+    body = '\n'.join(
+        map(
+            lambda s:s.strip(),
+            lines[4:-n_files-1]
+        )
+    )
+
+    return body
 
 
 def assert_git_repo(repo:pathlib.Path) -> bool:
