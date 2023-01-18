@@ -38,15 +38,18 @@ def repo() -> pathlib.Path:
         yield test_repo_path
 
 
-def test_start_temporary_branch__switch_to_temporary_branch(repo:pathlib.Path):
+def test_start_temporary_branch_head__switch_to_temporary_branch(repo:pathlib.Path):
     new_branch_name = 'rebase_ipynb_test'
 
-    rebase_ipynb.start_temporary_branch(repo, new_branch_name)
+    # function under test 1
+    rebase_ipynb.start_temporary_branch_head(repo, commit="HEAD", new_branch=new_branch_name)
+
+    # list of branch names
     output = subprocess.check_output(['git', 'branch'], cwd=repo, encoding='utf-8')
     output_lines = tuple(map(lambda s:s.strip(), output.splitlines()))
+    assert any(map(lambda s:s.endswith(new_branch_name), output_lines)), f"output_lines = {output_lines}"
 
-    assert any(map(lambda s:s.endswith(new_branch_name), output_lines)), output_lines
-
+    # function under test 2
     rebase_ipynb.switch_to_temporary_branch(repo, "main")
     output = subprocess.check_output(['git', 'branch'], cwd=repo, encoding='utf-8')
 
