@@ -230,5 +230,19 @@ def test_get_changed_files():
     ))
 
 
+def test_get_hash_log_cmd():
+    start = 'abc'
+    end = 'xyz'
+
+    result = rebase_ipynb.get_hash_log_cmd(start, end)
+
+    assert isinstance(result, list)
+    assert all(map(lambda x: isinstance(x, str), result))
+
+    expected = ['git', 'log', '--reverse', '--pretty=format:%H', f'{start}..{end}']
+
+    assert result == expected
+
+
 if '__main__' == __name__:
     pytest.main([__file__])
