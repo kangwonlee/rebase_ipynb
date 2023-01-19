@@ -218,10 +218,7 @@ def get_repo_folder_path(parsed:argparse.Namespace) -> pathlib.Path:
 
 def git_log_hash(repo:pathlib.Path, start:str, end:str) -> Tuple[str]:
     return tuple(
-        subprocess.check_output(
-            get_hash_log_cmd(start, end),
-            cwd=repo, encoding='utf-8'
-        ).splitlines()
+        git(get_hash_log_cmd(start, end), repo=repo).splitlines()
     )
 
 
