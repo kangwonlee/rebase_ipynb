@@ -205,7 +205,7 @@ def test_remove_metadata_id__eq_local():
 def test_get_git_log():
     start = "dfecfb3"
     end = "e00de3f"
-    result = rebase_ipynb.get_git_log(proj_folder, start, end)
+    result = rebase_ipynb.git_log_hash(proj_folder, start, end)
 
     assert isinstance(result, tuple)
 
@@ -219,7 +219,7 @@ def test_get_git_log():
 
 
 def test_get_changed_files():
-    result = rebase_ipynb.get_changed_files(proj_folder, "e00de3f")
+    result = rebase_ipynb.git_diff_fnames(proj_folder, "e00de3f")
 
     assert isinstance(result, tuple)
 

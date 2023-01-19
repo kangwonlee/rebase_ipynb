@@ -26,7 +26,7 @@ from typing import Dict, List, Tuple
 
 
 def process_commits(repo:pathlib.Path, first_commit:str, last_commit:str, new_branch:str):
-    commit_list = get_git_log(repo=repo, start=first_commit, end=last_commit)
+    commit_list = git_log_hash(repo=repo, start=first_commit, end=last_commit)
 
     if first_commit not in commit_list:
         commit_list.insert(0, first_commit)
@@ -51,7 +51,7 @@ def process_a_commit(repo:pathlib.Path, commit:str, new_branch:str):
 
     commit_info = get_commit_info(repo=repo, commit=commit)
 
-    changed_files = get_changed_files(repo=repo, commit=commit)
+    changed_files = git_diff_fnames(repo=repo, commit=commit)
 
     with tempfile.TemporaryDirectory() as tmpdir:
         tmpdir = pathlib.Path(tmpdir)
@@ -216,7 +216,7 @@ def get_repo_folder_path(parsed:argparse.Namespace) -> pathlib.Path:
     return p
 
 
-def get_git_log(repo:pathlib.Path, start:str, end:str) -> Tuple[str]:
+def git_log_hash(repo:pathlib.Path, start:str, end:str) -> Tuple[str]:
     return tuple(
         subprocess.check_output(
             get_hash_log_cmd(start, end),
@@ -229,7 +229,7 @@ def get_hash_log_cmd(start:str, end:str) -> List[str]:
     return ['git', 'log', '--reverse', '--pretty=format:%H', f'{start}..{end}']
 
 
-def get_changed_files(repo:pathlib.Path, commit:str) -> Tuple[str]:
+def git_diff_fnames(repo:pathlib.Path, commit:str) -> Tuple[str]:
     return tuple(
         git(get_chg_files_cmd(commit), repo=repo).splitlines()
     )
@@ -258,13 +258,14 @@ def get_current_branch_cmd() -> List[str]:
     return ['git', 'branch', '--show-current']
 
 
-def get_branch_list(repo:pathlib.Path) -> Tuple[str]:
+def git_branch(repo:pathlib.Path) -> Tuple[str]:
     return tuple(
-        subprocess.check_output(
-            ['git', 'branch'],
-            cwd=repo, encoding='utf-8'
-        ).splitlines()
+        git(get_branch_cmd(), repo=repo).splitlines()
     )
+
+
+def get_branch_cmd() -> List[str]:
+    return ['git', 'branch']
 
 
 def process_ipynb(src_path:pathlib.Path):
