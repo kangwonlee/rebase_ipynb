@@ -74,18 +74,18 @@ def process_a_commit(repo:pathlib.Path, commit:str, new_branch:str):
 
 
 def git_checkout(repo:pathlib.Path, commit:str):
-    git(get_checkout_cmd(commit), repo=repo)
+    check_output(get_checkout_cmd(commit), repo=repo)
 
 
 def git_add(repo:pathlib.Path, files:List[str]):
-    git(get_add_cmd(files), repo=repo)
+    check_output(get_add_cmd(files), repo=repo)
 
 
 def git_commit(repo:pathlib.Path, commit_info:Dict[str, str]):
-    git(get_commit_cmd(commit_info), repo=repo)
+    check_output(get_commit_cmd(commit_info), repo=repo)
 
 
-def git(cmd:List[str], repo:pathlib.Path) -> str:
+def check_output(cmd:List[str], repo:pathlib.Path) -> str:
     return subprocess.check_output(cmd, cwd=repo, encoding='utf-8')
 
 
@@ -218,7 +218,7 @@ def get_repo_folder_path(parsed:argparse.Namespace) -> pathlib.Path:
 
 def git_log_hash(repo:pathlib.Path, start:str, end:str) -> Tuple[str]:
     return tuple(
-        git(get_hash_log_cmd(start, end), repo=repo).splitlines()
+        check_output(get_hash_log_cmd(start, end), repo=repo).splitlines()
     )
 
 
@@ -228,7 +228,7 @@ def get_hash_log_cmd(start:str, end:str) -> List[str]:
 
 def git_diff_fnames(repo:pathlib.Path, commit:str) -> Tuple[str]:
     return tuple(
-        git(get_chg_files_cmd(commit), repo=repo).splitlines()
+        check_output(get_chg_files_cmd(commit), repo=repo).splitlines()
     )
 
 
@@ -237,7 +237,7 @@ def get_chg_files_cmd(commit:str) -> List[str]:
 
 
 def git_switch_c(repo:pathlib.Path, commit:str, branch:str):
-    git(get_switch_c_cmd(commit, branch), repo=repo)
+    check_output(get_switch_c_cmd(commit, branch), repo=repo)
 
 
 def get_switch_c_cmd(commit:str, branch:str) -> List[str]:
@@ -245,7 +245,7 @@ def get_switch_c_cmd(commit:str, branch:str) -> List[str]:
 
 
 def get_current_branch(repo:pathlib.Path) -> str:
-    return git(
+    return check_output(
         get_current_branch_cmd(),
         repo=repo
     ).strip()
@@ -257,7 +257,7 @@ def get_current_branch_cmd() -> List[str]:
 
 def git_branch(repo:pathlib.Path) -> Tuple[str]:
     return tuple(
-        git(get_branch_cmd(), repo=repo).splitlines()
+        check_output(get_branch_cmd(), repo=repo).splitlines()
     )
 
 
