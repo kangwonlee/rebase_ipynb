@@ -58,13 +58,16 @@ def process_a_commit(repo:pathlib.Path, commit:str, new_branch:str):
 
         for f in changed_files:
             shutil.copy(repo / f, tmpdir / f)
-            if f.endswith('.ipynb'):
-                process_ipynb(tmpdir/f)
 
         switch_to_temporary_branch(repo, new_branch)
 
         for f in changed_files:
             shutil.copy(tmpdir / f, repo / f)
+
+            if f.endswith('.ipynb'):
+                process_ipynb(repo / f)
+
+                assert verify_processed_ipynb(tmpdir / f, repo / f)
 
     git_add(repo=repo, files=changed_files)
     git_commit(
