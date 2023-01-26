@@ -1,10 +1,13 @@
 import json
 import pathlib
+import random
+import shutil
 import subprocess
 import sys
 import tempfile
 
 import pytest
+
 
 proj_folder = pathlib.Path(__file__).parent.parent.absolute()
 
@@ -13,8 +16,10 @@ assert proj_folder.is_dir(), proj_folder.absolute()
 
 test_folder = proj_folder / 'tests'
 
+
 assert test_folder.exists(), test_folder.absolute()
 assert test_folder.is_dir(), test_folder.absolute()
+
 
 sys.path.insert(0,
     str(proj_folder)
@@ -242,6 +247,146 @@ def test_get_hash_log_cmd():
     expected = ['git', 'log', '--reverse', '--pretty=format:%H', f'{start}..{end}']
 
     assert result == expected
+
+
+def test_git_parent_sha(repo):
+    result = rebase_ipynb.git_parent_sha(repo, 'bae0691b')
+
+    assert result.startswith("86ebb42")
+
+
+def test_process_commits(repo:pathlib.Path):
+
+    commits_original = (
+        "86ebb42000d7cdd9af0c320ee24be5dc2fa24a2f",
+        "bae0691b9b6917d951f0161405063f401b058073",
+        "c31c6b24632729a2fadb090ef37d9d879e30c696",
+        "b41002e62d1dfe3ab4143a2f6ba1b5aeeab13e74",
+        "e1c890a2f6dd6a7d6962b9e967527f40b48d89c5",
+        "6a033e9fde2116f24bd62e403a73d69429408a31",
+        "717ed6844017766e040d49e6dd562d153aa2bb44",
+        "74af5773172c4bb7013a44527a688079f1364848",
+        "86eaccc9b8c6bcd275f93fd7ba3d7d15c1b13843",
+        "8e1ebe4b5cc34e86de4be066d93d3f9f6b4c0545",
+        "253bb6edb3d0f1724292384bbab12068d8061133",
+        "9acef1eb750c3e633281b39802511455c56ff0b8",
+    )
+
+    first_commit = '86ebb42'
+    last_commit = '9acef1e'
+
+    # get the commit before the first commit
+    first_commit_parent = rebase_ipynb.git_parent_sha(repo, first_commit)
+
+    # are the commits in the list?
+    assert any(
+        map(
+            lambda x: x.startswith(first_commit),
+            commits_original
+        )
+    ), f"first commit {first_commit} not found in {commits_original}"
+
+    assert any(
+        map(
+            lambda x: x.startswith(last_commit),
+            commits_original
+        )
+    ), f"last commit {last_commit} not found in {commits_original}"
+
+    # new branch name with a random integer
+    new_branch = f'test_branch_{random.randint(0, (2**4)**8):08x}'
+
+    # commit info
+    commit_info_inverted = []
+
+    for commit in commits_original:
+        commit_info_inverted.append(rebase_ipynb.git_show_info(repo, commit))
+
+    try:
+
+        #####################
+        # function under test
+        rebase_ipynb.process_commits(repo, first_commit, last_commit, new_branch)
+        #####################
+
+        # new branch exists?
+        git_branch_result = subprocess.check_output(['git', 'branch',], cwd=repo, encoding='utf-8')
+        branch_names = tuple(map(lambda x: x.strip(" *"), git_branch_result.splitlines()))
+        assert new_branch in branch_names
+
+        # commit hashes in new branch?
+        commits_new = subprocess.check_output(
+            ['git', 'log', '--reverse', '--pretty=format:%H', f'{first_commit_parent}..{new_branch}'],
+            cwd=repo, encoding='utf-8'
+        ).splitlines()[1:]
+
+        # same number of commits?
+        assert len(commits_new) == len(commits_original), (
+            f"len(commits_new)={len(commits_new)} "
+            f"!= len(commits_original)={len(commits_original)}\n"
+            f"commits_new=\n{commits_new}\n"
+            f"commits_original=\n{commits_original}\n"
+        )
+
+        # each commit same info?
+        for sha_org, sha_new in zip(commits_original, commits_new):
+            org_info = rebase_ipynb.git_show_info(repo, sha_org)
+            new_info = rebase_ipynb.git_show_info(repo, sha_new)
+
+            assert org_info == new_info, (
+                f"org_info={org_info} != new_info={new_info}\n"
+            )
+
+        # each commit changed ipynb files produce same .py files?
+        for sha_org, sha_new in zip(commits_original, commits_new):
+            org_files = rebase_ipynb.git_diff_fnames(repo, sha_org)
+            new_files = rebase_ipynb.git_diff_fnames(repo, sha_new)
+
+            # changed files the same?
+            assert set(org_files) == set(new_files), (
+                f"org_files={org_files} != new_files={new_files}\n"
+            )
+
+            # each changed file produces same .py file?
+            for fname in org_files:
+                if fname.endswith('.ipynb'):
+                    with tempfile.TemporaryDirectory() as tmpdir:
+                        tmp_path = pathlib.Path(tmpdir)
+                        # checkout the original sha
+                        subprocess.check_call(['git', 'checkout', sha_org, fname], cwd=repo)
+                        # original filename after copy
+                        original_fname = tmp_path / ("org_" + fname)
+
+                        # copy the original file to a temporary directory
+                        shutil.copy(repo / fname, original_fname)
+
+                        # checkout the new sha
+                        subprocess.check_call(['git', 'checkout', sha_new, fname], cwd=repo)
+                        # new filename after copy
+                        new_fname = tmp_path / ("new_" + fname)
+
+                        # copy the original file to a temporary directory
+                        shutil.copy(repo / fname, new_fname)
+
+                        assert rebase_ipynb.verify_processed_ipynb(original_fname, new_fname)
+
+    finally:
+        branch_names_finally = subprocess.check_output(['git', 'branch',], cwd=repo, encoding='utf-8')
+        branch_names_finally_list = branch_names_finally.splitlines()
+
+        was_branch_created = any(map(lambda x: x.strip(" *") == new_branch, branch_names_finally_list))
+
+        if was_branch_created:
+            subprocess.run(
+                ['git', 'switch', "--force", 'main'],
+                cwd=repo,
+            )
+
+            # delete the new branch
+            subprocess.run(
+                ['git', 'branch', '-D', new_branch],
+                cwd=repo,
+            )
 
 
 if '__main__' == __name__:

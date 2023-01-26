@@ -122,12 +122,17 @@ def get_show_stat_commit(commit:str) -> List[str]:
     return ['git', 'show', '--stat', commit]
 
 
+def git_parent_sha(repo:pathlib.Path, commit:str) -> str:
+    return git_show_info(repo, commit+'^')["sha"]
+
+
 def get_commit_info_from_show(output:str) -> Dict[str, str]:
     lines = output.splitlines()
 
     body = get_commit_message_body(lines)
 
     result = {
+        "sha": lines[0].split('commit')[1].strip(),
         "author": lines[1].split('Author:')[1].strip().split('<')[0].strip(),
         "author_email": lines[1].split('<')[1].strip().strip('>'),
         "date": lines[2].split('Date:')[1].strip(),
