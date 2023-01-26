@@ -49,7 +49,7 @@ def process_a_commit(repo:pathlib.Path, commit:str, new_branch:str):
 
     git_checkout(repo=repo, commit=commit)
 
-    commit_info = get_commit_info(repo=repo, commit=commit)
+    commit_info = git_show_info(repo=repo, commit=commit)
 
     changed_files = git_diff_fnames(repo=repo, commit=commit)
 
@@ -88,7 +88,7 @@ def git_commit(repo:pathlib.Path, commit_info:Dict[str, str]):
     check_output(get_commit_cmd(commit_info), repo=repo)
 
 
-def check_output(cmd:List[str], repo:pathlib.Path) -> str:
+def check_output(cmd:List[str], repo:pathlib.Path=None) -> str:
     return subprocess.check_output(cmd, cwd=repo, encoding='utf-8')
 
 
@@ -109,13 +109,18 @@ def get_commit_cmd(commit_info) -> List[str]:
     ]
 
 
-def get_commit_info(repo:pathlib.Path, commit:str) -> Dict[str, str]:
+def git_show_info(repo:pathlib.Path, commit:str) -> Dict[str, str]:
     return get_commit_info_from_show(
-        subprocess.check_output(
-            ['git', 'show', '--stat', commit],
-            cwd=repo, encoding='utf-8'
+        check_output(
+            get_show_stat_commit(commit),
+            repo=repo
         )
     )
+
+
+def get_show_stat_commit(commit:str) -> List[str]:
+    return ['git', 'show', '--stat', commit]
+
 
 def get_commit_info_from_show(output:str) -> Dict[str, str]:
     lines = output.splitlines()
@@ -161,7 +166,7 @@ def assert_git_repo(repo:pathlib.Path) -> bool:
 def start_temporary_branch_head(repo:pathlib.Path, commit:str, new_branch:str=None):
     assert_git_repo(repo)
 
-    subprocess.run(get_checkout_head_cmd(commit, new_branch), cwd=repo)
+    check_output(get_checkout_head_cmd(commit, new_branch), repo=repo)
 
 
 def get_checkout_head_cmd(commit:str, new_branch:str) -> List[str]:
@@ -176,7 +181,7 @@ def get_checkout_head_cmd(commit:str, new_branch:str) -> List[str]:
 def switch_to_temporary_branch(repo:pathlib.Path, branch:str):
     assert_git_repo(repo)
 
-    subprocess.run(get_switch_cmd(branch), cwd=repo)
+    check_output(get_switch_cmd(branch), repo=repo)
 
 
 def get_switch_cmd(branch:str) -> List[str]:
@@ -283,7 +288,7 @@ def process_ipynb(src_path:pathlib.Path):
 
         remove_colab_button(src_path, src_after_ipynb_path)
 
-        subprocess.run(get_nbconvert_ipynb_cmd(src_path, src_after_ipynb_path))
+        check_output(get_nbconvert_ipynb_cmd(src_path, src_after_ipynb_path))
 
     remove_metadata_id(src_path, src_path)
 
@@ -348,8 +353,8 @@ def verify_processed_ipynb(src_ipynb_path:pathlib.Path, dest_ipynb_path:pathlib.
         src_py_path = tmpdir / (src_ipynb_path.stem + '.py')
         dest_py_path = tmpdir / (dest_ipynb_path.stem + '.py')
 
-        subprocess.run(get_nbconvert_python_cmd(src_ipynb_path, src_py_path))
-        subprocess.run(get_nbconvert_python_cmd(dest_ipynb_path, dest_py_path))
+        check_output(get_nbconvert_python_cmd(src_ipynb_path, src_py_path))
+        check_output(get_nbconvert_python_cmd(dest_ipynb_path, dest_py_path))
 
         assert src_py_path.exists()
         assert src_py_path.is_file()
