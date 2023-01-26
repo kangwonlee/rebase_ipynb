@@ -26,12 +26,15 @@ from typing import Dict, List, Tuple
 
 
 def process_commits(repo:pathlib.Path, first_commit:str, last_commit:str, new_branch:str):
-    commit_list = git_log_hash(repo=repo, start=first_commit, end=last_commit)
 
-    if first_commit not in commit_list:
-        commit_list.insert(0, first_commit)
+    start_parent = git_parent_sha(repo=repo, commit=first_commit)
 
-    start_temporary_branch_head(repo=repo, commit=first_commit, new_branch=new_branch)
+    commit_list = git_log_hash(repo=repo, start_parent=start_parent, end=last_commit)
+
+    assert any(map(lambda x: x.startswith(first_commit), commit_list)), (first_commit, commit_list)
+    assert any(map(lambda x: x.startswith(last_commit), commit_list)), (last_commit, commit_list)
+
+    start_temporary_branch_head(repo=repo, commit=start_parent, new_branch=new_branch)
 
     for commit in commit_list:
         process_a_commit(repo=repo, commit=commit, new_branch=new_branch)
@@ -229,9 +232,9 @@ def get_repo_folder_path(parsed:argparse.Namespace) -> pathlib.Path:
     return p
 
 
-def git_log_hash(repo:pathlib.Path, start:str, end:str) -> Tuple[str]:
+def git_log_hash(repo:pathlib.Path, start_parent:str, end:str) -> Tuple[str]:
     return tuple(
-        check_output(get_hash_log_cmd(start, end), repo=repo).splitlines()
+        check_output(get_hash_log_cmd(start_parent, end), repo=repo).splitlines()
     )
 
 

@@ -228,14 +228,14 @@ def test_remove_metadata_id__eq_local():
 
 
 def test_get_git_log(repo, commits_original):
-    start = commits_original[0]
+    start_parent = commits_original[0]
     end = commits_original[-1]
 
-    result = rebase_ipynb.git_log_hash(repo, start, end)
+    result = rebase_ipynb.git_log_hash(repo, start_parent, end)
 
     assert isinstance(result, tuple)
 
-    assert result == commits_original, subprocess.check_output(
+    assert result == commits_original[1:], subprocess.check_output(
         ['git', 'log', '--oneline', '--graph', "--all"],
         cwd=repo, encoding="utf-8"
     )
