@@ -389,7 +389,10 @@ def remove_colab_button(src_ipynb_path:pathlib.Path, dest_ipynb_path:pathlib.Pat
 
     assert 'cells' in ipynb_json
     assert isinstance(ipynb_json['cells'], list)
-    assert len(ipynb_json['cells']) > 0
+    assert len(ipynb_json['cells']) > 0, (
+        "ipynb file is empty\n",
+        ipynb_json
+        )
 
     link_text = "https://colab.research.google.com/github/"
 
