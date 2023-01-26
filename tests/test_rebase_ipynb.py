@@ -118,7 +118,7 @@ def test_get_commit_info_from_show__one_file_changed():
     assert result['author_email'] == "kangwon.lee@tukorea.ac.kr"
     assert result['date'] == "Sat Nov 19 09:55:32 2022 +0900"
     assert result['message'] == (
-        "init_other_columns()"
+        "init_other_columns()" + '\n'
     )
 
 
