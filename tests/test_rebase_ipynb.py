@@ -6,6 +6,8 @@ import subprocess
 import sys
 import tempfile
 
+from typing import Tuple
+
 import pytest
 
 
@@ -41,6 +43,24 @@ def repo() -> pathlib.Path:
         assert test_repo_git_path.exists(), test_repo_path.absolute()
 
         yield test_repo_path
+
+
+@pytest.fixture()
+def commits_original() -> Tuple[str]:
+    return (
+        "86ebb42000d7cdd9af0c320ee24be5dc2fa24a2f",
+        "bae0691b9b6917d951f0161405063f401b058073",
+        "c31c6b24632729a2fadb090ef37d9d879e30c696",
+        "b41002e62d1dfe3ab4143a2f6ba1b5aeeab13e74",
+        "e1c890a2f6dd6a7d6962b9e967527f40b48d89c5",
+        "6a033e9fde2116f24bd62e403a73d69429408a31",
+        "717ed6844017766e040d49e6dd562d153aa2bb44",
+        "74af5773172c4bb7013a44527a688079f1364848",
+        "86eaccc9b8c6bcd275f93fd7ba3d7d15c1b13843",
+        "8e1ebe4b5cc34e86de4be066d93d3f9f6b4c0545",
+        "253bb6edb3d0f1724292384bbab12068d8061133",
+        "9acef1eb750c3e633281b39802511455c56ff0b8",
+    )
 
 
 def test_get_commit_info_from_show():
@@ -207,20 +227,15 @@ def test_remove_metadata_id__eq_local():
         assert rebase_ipynb.verify_processed_ipynb(dest_ipynb_path, src_ipynb_path)
 
 
-def test_get_git_log():
-    start = "dfecfb3"
-    end = "e00de3f"
-    result = rebase_ipynb.git_log_hash(proj_folder, start, end)
+def test_get_git_log(repo, commits_original):
+    start = commits_original[0]
+    end = commits_original[-1]
+
+    result = rebase_ipynb.git_log_hash(repo, start, end)
 
     assert isinstance(result, tuple)
 
-    assert set(result) == set((
-        '1bfd7a0a542f6401140bb81cac2614dd128f579e',
-        '56f552ffc89e7de4ba372d7357bf0194a1c5a0d3',
-        '96ae54de2fd152fa9dd7919f492a95744e5c45ff',
-        'da52480de58641c2b3c5b22f4b6aa59fe1d85952',
-        'e00de3f2d957986799abd533e13644152a31e80c',
-    ))
+    assert set(result) == set(commits_original)
 
 
 def test_get_changed_files():
@@ -255,22 +270,7 @@ def test_git_parent_sha(repo):
     assert result.startswith("86ebb42")
 
 
-def test_process_commits(repo:pathlib.Path):
-
-    commits_original = (
-        "86ebb42000d7cdd9af0c320ee24be5dc2fa24a2f",
-        "bae0691b9b6917d951f0161405063f401b058073",
-        "c31c6b24632729a2fadb090ef37d9d879e30c696",
-        "b41002e62d1dfe3ab4143a2f6ba1b5aeeab13e74",
-        "e1c890a2f6dd6a7d6962b9e967527f40b48d89c5",
-        "6a033e9fde2116f24bd62e403a73d69429408a31",
-        "717ed6844017766e040d49e6dd562d153aa2bb44",
-        "74af5773172c4bb7013a44527a688079f1364848",
-        "86eaccc9b8c6bcd275f93fd7ba3d7d15c1b13843",
-        "8e1ebe4b5cc34e86de4be066d93d3f9f6b4c0545",
-        "253bb6edb3d0f1724292384bbab12068d8061133",
-        "9acef1eb750c3e633281b39802511455c56ff0b8",
-    )
+def test_process_commits(repo:pathlib.Path, commits_original:Tuple[str]):
 
     first_commit = '86ebb42'
     last_commit = '9acef1e'
