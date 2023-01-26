@@ -235,7 +235,10 @@ def test_get_git_log(repo, commits_original):
 
     assert isinstance(result, tuple)
 
-    assert set(result) == set(commits_original)
+    assert result == commits_original, subprocess.check_output(
+        ['git', 'log', '--oneline', '--graph', "--all"],
+        cwd=repo, encoding="utf-8"
+    )
 
 
 def test_get_changed_files():
