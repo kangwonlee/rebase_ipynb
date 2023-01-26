@@ -63,7 +63,7 @@ def commits_original() -> Tuple[str]:
     )
 
 
-def test_get_commit_info_from_show():
+def test_get_commit_info_from_show__two_files_changed():
     git_show_msg = (
         "commit c759024d70d6719b33cc8e10533f2bcdbcd18abe (HEAD -> temporary-branch)\n"
         "Author: KangWon LEE <kangwon.lee@tukorea.ac.kr>\n"
