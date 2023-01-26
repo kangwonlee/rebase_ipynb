@@ -227,7 +227,7 @@ def test_remove_metadata_id__eq_local():
         assert rebase_ipynb.verify_processed_ipynb(dest_ipynb_path, src_ipynb_path)
 
 
-def test_get_git_log(repo, commits_original):
+def test_get_git_log(repo: pathlib.Path, commits_original: Tuple[str]):
     start_parent = commits_original[0]
     end = commits_original[-1]
 
@@ -241,16 +241,14 @@ def test_get_git_log(repo, commits_original):
     )
 
 
-def test_get_changed_files():
-    result = rebase_ipynb.git_diff_fnames(proj_folder, "e00de3f")
+def test_get_changed_files(repo: pathlib.Path):
+    result = rebase_ipynb.git_diff_fnames(repo, "717ed68")
 
     assert isinstance(result, tuple)
 
-    assert set(result) == set((
-        'tests/eq_colab.ipynb',
-        'tests/eq_local.ipynb',
-        'tests/ne_colab.ipynb'
-    ))
+    assert set(result) == set([
+        "sieve.ipynb"
+    ])
 
 
 def test_get_hash_log_cmd():
