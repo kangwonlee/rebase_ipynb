@@ -116,14 +116,9 @@ def test_get_commit_info_from_show__one_file_changed():
 
     assert result['author'] == "KangWon LEE"
     assert result['author_email'] == "kangwon.lee@tukorea.ac.kr"
-    assert result['date'] == "Wed Jan 18 20:57:54 2023 +0900"
+    assert result['date'] == "Sat Nov 19 09:55:32 2022 +0900"
     assert result['message'] == (
-        "checkout_head() -> start_temporary_branch_head()\n"
-        "\n"
-        "also removed start_temporary_branch() to avoid confusion\n"
-        "\n"
-        "for this application, the original intention was\n"
-        "to start the temporary branch at the HEAD of the first commit\n"
+        "init_other_columns()"
     )
 
 
