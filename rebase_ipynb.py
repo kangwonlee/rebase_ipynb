@@ -73,7 +73,7 @@ def process_a_commit(repo:pathlib.Path, commit:str, new_branch:str):
             assert src.is_file()
 
             if not dest.parent.exists():
-                dest.parent.mkdir()
+                dest.parent.mkdir(parents=True)
 
             assert dest.parent.exists()
             assert dest.parent.is_dir()
@@ -91,7 +91,7 @@ def process_a_commit(repo:pathlib.Path, commit:str, new_branch:str):
             assert src.is_file()
 
             if not dest.parent.exists():
-                dest.parent.mkdir()
+                dest.parent.mkdir(parents=True)
 
             assert dest.parent.exists()
             assert dest.parent.is_dir()
@@ -161,6 +161,7 @@ def git_config_committer_email(repo:pathlib.Path, commit_info:Dict[str, str]) ->
 def get_commit_cmd(commit_info) -> List[str]:
     return [
         'git', 'commit',
+            '--allow-empty',
             '-m', commit_info["message"],
             '--date', commit_info["date"],
             '--author', f'{commit_info["author"]} <{commit_info["author_email"]}>',
