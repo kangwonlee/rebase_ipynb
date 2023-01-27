@@ -375,6 +375,10 @@ def test_process_commits(repo:pathlib.Path, commits_original:Tuple[str]):
             org_info = rebase_ipynb.git_show_info(repo, sha_org)
             new_info = rebase_ipynb.git_show_info(repo, sha_new)
 
+            # cannot be the same
+            del org_info['sha']
+            del new_info['sha']
+
             assert org_info == new_info, (
                 f"org_info={org_info} != new_info={new_info}\n"
             )
