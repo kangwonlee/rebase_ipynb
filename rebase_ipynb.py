@@ -88,8 +88,8 @@ def git_add(repo:pathlib.Path, files:List[str]):
 
 
 def git_commit(repo:pathlib.Path, commit_info:Dict[str, str]):
-    git_config_committer_name(commit_info)
-    git_config_committer_email(commit_info)
+    git_config_committer_name(repo, commit_info)
+    git_config_committer_email(repo, commit_info)
     check_output(get_commit_cmd(commit_info), repo=repo)
 
 
@@ -105,16 +105,16 @@ def get_add_cmd(files:List[str]) -> List[str]:
     return ['git', 'add', *files]
 
 
-def git_config_committer_name(commit_info:Dict[str, str]) -> List[str]:
+def git_config_committer_name(repo:pathlib.Path, commit_info:Dict[str, str]) -> List[str]:
     return check_output([
         'git', 'config', 'user.name', commit_info["committer"],
-    ])
+    ], repo=repo)
 
 
-def git_config_committer_email(commit_info:Dict[str, str]) -> List[str]:
+def git_config_committer_email(repo:pathlib.Path, commit_info:Dict[str, str]) -> List[str]:
     return check_output([
         'git', 'config', 'user.email', commit_info["committer_email"],
-    ])
+    ], repo=repo)
 
 
 def get_commit_cmd(commit_info) -> List[str]:
