@@ -72,6 +72,9 @@ def process_a_commit(repo:pathlib.Path, commit:str, new_branch:str):
             assert src.exists()
             assert src.is_file()
 
+            if not dest.parent.exists():
+                dest.parent.mkdir()
+
             assert dest.parent.exists()
             assert dest.parent.is_dir()
 
@@ -86,6 +89,9 @@ def process_a_commit(repo:pathlib.Path, commit:str, new_branch:str):
 
             assert src.exists()
             assert src.is_file()
+
+            if not dest.parent.exists():
+                dest.parent.mkdir()
 
             assert dest.parent.exists()
             assert dest.parent.is_dir()
