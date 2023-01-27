@@ -260,8 +260,8 @@ def git_log_hash(repo:pathlib.Path, start_parent:str, end:str) -> Tuple[str]:
     )
 
 
-def get_hash_log_cmd(start:str, end:str) -> List[str]:
-    return ['git', 'log', '--reverse', '--pretty=format:%H', f'{start}..{end}']
+def get_hash_log_cmd(start_parent:str, end:str) -> List[str]:
+    return ['git', 'log', '--reverse', '--pretty=format:%H', f'{start_parent}..{end}']
 
 
 def git_diff_fnames(repo:pathlib.Path, commit:str) -> Tuple[str]:

@@ -45,24 +45,6 @@ def repo() -> pathlib.Path:
         yield test_repo_path
 
 
-@pytest.fixture()
-def commits_original() -> Tuple[str]:
-    return (
-        "86ebb42000d7cdd9af0c320ee24be5dc2fa24a2f",
-        "bae0691b9b6917d951f0161405063f401b058073",
-        "c31c6b24632729a2fadb090ef37d9d879e30c696",
-        "b41002e62d1dfe3ab4143a2f6ba1b5aeeab13e74",
-        "e1c890a2f6dd6a7d6962b9e967527f40b48d89c5",
-        "6a033e9fde2116f24bd62e403a73d69429408a31",
-        "717ed6844017766e040d49e6dd562d153aa2bb44",
-        "74af5773172c4bb7013a44527a688079f1364848",
-        "86eaccc9b8c6bcd275f93fd7ba3d7d15c1b13843",
-        "8e1ebe4b5cc34e86de4be066d93d3f9f6b4c0545",
-        "253bb6edb3d0f1724292384bbab12068d8061133",
-        "9acef1eb750c3e633281b39802511455c56ff0b8",
-    )
-
-
 def test_get_commit_info_from_show__two_files_changed():
     git_show_msg = (
         "commit c759024d70d6719b33cc8e10533f2bcdbcd18abe\n"
@@ -261,7 +243,23 @@ def test_remove_metadata_id__eq_local():
         assert rebase_ipynb.verify_processed_ipynb(dest_ipynb_path, src_ipynb_path)
 
 
-def test_get_git_log(repo: pathlib.Path, commits_original: Tuple[str]):
+def test_get_git_log(repo: pathlib.Path):
+
+    commits_original = (
+        "86ebb42000d7cdd9af0c320ee24be5dc2fa24a2f",
+        "bae0691b9b6917d951f0161405063f401b058073",
+        "c31c6b24632729a2fadb090ef37d9d879e30c696",
+        "b41002e62d1dfe3ab4143a2f6ba1b5aeeab13e74",
+        "e1c890a2f6dd6a7d6962b9e967527f40b48d89c5",
+        "6a033e9fde2116f24bd62e403a73d69429408a31",
+        "717ed6844017766e040d49e6dd562d153aa2bb44",
+        "74af5773172c4bb7013a44527a688079f1364848",
+        "86eaccc9b8c6bcd275f93fd7ba3d7d15c1b13843",
+        "8e1ebe4b5cc34e86de4be066d93d3f9f6b4c0545",
+        "253bb6edb3d0f1724292384bbab12068d8061133",
+        "9acef1eb750c3e633281b39802511455c56ff0b8",
+    )
+
     start_parent = commits_original[0]
     end = commits_original[-1]
 
@@ -286,15 +284,15 @@ def test_get_changed_files(repo: pathlib.Path):
 
 
 def test_get_hash_log_cmd():
-    start = 'abc'
+    start_parent = 'abc'
     end = 'xyz'
 
-    result = rebase_ipynb.get_hash_log_cmd(start, end)
+    result = rebase_ipynb.get_hash_log_cmd(start_parent, end)
 
     assert isinstance(result, list)
     assert all(map(lambda x: isinstance(x, str), result))
 
-    expected = ['git', 'log', '--reverse', '--pretty=format:%H', f'{start}..{end}']
+    expected = ['git', 'log', '--reverse', '--pretty=format:%H', f'{start_parent}..{end}']
 
     assert result == expected
 
@@ -305,13 +303,19 @@ def test_git_parent_sha(repo):
     assert result.startswith("86ebb42")
 
 
-def test_process_commits(repo:pathlib.Path, commits_original:Tuple[str]):
+def test_process_commits(repo:pathlib.Path):
 
     first_commit = '86ebb42'
     last_commit = '9acef1e'
 
     # get the commit before the first commit
-    first_commit_parent = rebase_ipynb.git_parent_sha(repo, first_commit)
+    start_parent = rebase_ipynb.git_parent_sha(repo, first_commit)
+
+    # get the commits between the first and the last commit
+    commits_original = rebase_ipynb.git_log_hash(repo, start_parent, last_commit)
+
+    assert commits_original[0].startswith(first_commit)
+    assert commits_original[-1].startswith(last_commit)
 
     # all commits until the last_commit
     all_sha_inv_org = subprocess.check_output(
@@ -364,7 +368,7 @@ def test_process_commits(repo:pathlib.Path, commits_original:Tuple[str]):
 
         # commit hashes in new branch?
         commits_new = subprocess.check_output(
-            ['git', 'log', '--reverse', '--pretty=format:%H', f'{first_commit_parent}..{new_branch}'],
+            ['git', 'log', '--reverse', '--pretty=format:%H', f'{start_parent}..{new_branch}'],
             cwd=repo, encoding='utf-8'
         ).splitlines()[1:]
 
