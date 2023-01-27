@@ -20,6 +20,7 @@ import json
 import os
 import pathlib
 import shutil
+import sys
 import tempfile
 import subprocess
 
@@ -224,29 +225,6 @@ def get_switch_cmd(branch:str) -> List[str]:
     return ['git', 'switch', branch]
 
 
-def parse_argv(argv:List[str]) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Unify ipynb format")
-
-    parser.add_argument(
-        "-r", "--repo", type=str, required=True,
-        help="repository folder"
-    )
-    parser.add_argument(
-        "-f", "--first", type=str, required=True,
-        help="first commit"
-    )
-    parser.add_argument(
-        "-l", "--last", type=str, required=True,
-        help="last commit"
-    )
-    parser.add_argument(
-        "-b", "--branch", type=str, required=True,
-        help="temporary branch name"
-    )
-
-    return parser.parse_args(argv)
-
-
 def get_repo_folder_path(parsed:argparse.Namespace) -> pathlib.Path:
     p = pathlib.Path(parsed.repo).resolve(strict=True)
 
@@ -436,3 +414,36 @@ def remove_colab_button(src_ipynb_path:pathlib.Path, dest_ipynb_path:pathlib.Pat
 def get_commiter_info_hash(repo, sha:str):
     commit = repo.commit(sha)
     return commit.committer.email, commit.committer.name, commit.committer.date
+
+
+def parse_argv(argv:List[str]) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Unify ipynb format")
+
+    parser.add_argument(
+        "-r", "--repo", type=str, required=True,
+        help="repository folder"
+    )
+    parser.add_argument(
+        "-f", "--first", type=str, required=True,
+        help="first commit"
+    )
+    parser.add_argument(
+        "-l", "--last", type=str, required=True,
+        help="last commit"
+    )
+    parser.add_argument(
+        "-b", "--branch", type=str, required=True,
+        help="temporary branch name"
+    )
+
+    return parser.parse_args(argv)
+
+
+def main(argv:List[str]):
+    parsed = parse_argv(argv[1:])
+
+    process_commits(pathlib.Path(parsed.repo), parsed.first, parsed.last, parsed.branch)
+
+
+if __name__ == '__main__':
+    main(sys.argv)
