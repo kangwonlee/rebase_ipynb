@@ -519,6 +519,9 @@ def test_process_commits(repo_info:Repo_Info):
                         # original filename after copy
                         original_fname = tmp_path / ("org_" + fname)
 
+                        if not original_fname.parent.exists():
+                            original_fname.parent.mkdir(parents=True)
+
                         # copy the original file to a temporary directory
                         shutil.copy(repo / fname, original_fname)
 
@@ -526,6 +529,9 @@ def test_process_commits(repo_info:Repo_Info):
                         subprocess.check_call(['git', '-c', "advice.detachedHead=false", 'checkout', sha_new, fname], cwd=repo)
                         # new filename after copy
                         new_fname = tmp_path / ("new_" + fname)
+
+                        if not new_fname.parent.exists():
+                            new_fname.parent.mkdir(parents=True)
 
                         # copy the original file to a temporary directory
                         shutil.copy(repo / fname, new_fname)
