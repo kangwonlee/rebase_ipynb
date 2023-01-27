@@ -375,14 +375,15 @@ def process_ipynb(src_path:pathlib.Path):
     with tempfile.TemporaryDirectory() as tmpdir:
         tmpdir = pathlib.Path(tmpdir)
 
-        src_after_ipynb_path = tmpdir / (src_path.name)
+        src_after_ipynb_path = tmpdir / (src_path.stem + '.py')
 
         remove_colab_button(src_path, src_after_ipynb_path)
 
         with tempfile.TemporaryFile() as my_null:
-            check_output(get_nbconvert_ipynb_cmd(src_path, src_after_ipynb_path), stderr=my_null)
+            check_output(get_nbconvert_python_cmd(src_path, src_after_ipynb_path), stderr=my_null)
 
-    remove_metadata_id(src_path, src_path)
+        # delete ipynb file
+        src_path.unlink()
 
 
 def get_nbconvert_ipynb_cmd(src_path:pathlib.Path, src_after_ipynb_path:pathlib.Path) -> List[str]:
