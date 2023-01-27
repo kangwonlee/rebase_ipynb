@@ -354,6 +354,7 @@ def test_process_commits(repo:pathlib.Path, commits_original:Tuple[str]):
 
         # same number of commits?
         assert len(commits_new) == len(commits_original), (
+            '\n' +
             subprocess.check_output(
                 ['git', 'log', '--oneline', '--graph', "--all"],
                 cwd=repo, encoding="utf-8"
