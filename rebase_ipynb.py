@@ -96,6 +96,8 @@ def process_a_commit(repo:pathlib.Path, commit:str, new_branch:str):
 
         git_switch(repo, new_branch)
 
+        add_list = []
+
         for f in changed_files:
 
             src = tmp_path / f
@@ -110,14 +112,25 @@ def process_a_commit(repo:pathlib.Path, commit:str, new_branch:str):
             assert dest.parent.exists()
             assert dest.parent.is_dir()
 
-            shutil.copy(tmp_path / f, repo / f)
+            shutil.copy(src, dest)
 
             if f.endswith('.ipynb'):
-                process_ipynb(repo / f)
+                process_ipynb(dest)
 
-                assert verify_processed_ipynb(tmp_path / f, repo / f)
+                dest_py = get_py_path(dest.parent, dest)
 
-    git_add(repo=repo, files=changed_files)
+                assert dest_py.exists()
+                assert dest_py.is_file()
+
+                # is dest_py in the repo?
+                assert repo in dest_py.parents
+
+                # https://stackoverflow.com/questions/54401973
+                add_list.append(str(dest_py.relative_to(repo)))
+            else:
+                add_list.append(f)
+
+    git_add(repo=repo, files=add_list)
     git_commit(
         repo=repo,
         commit_info=commit_info
@@ -375,12 +388,14 @@ def process_ipynb(src_path:pathlib.Path):
     with tempfile.TemporaryDirectory() as tmpdir:
         tmpdir = pathlib.Path(tmpdir)
 
-        src_after_ipynb_path = tmpdir / (src_path.stem + '.py')
+        ipynb_without_button = tmpdir / src_path.name
 
-        remove_colab_button(src_path, src_after_ipynb_path)
+        remove_colab_button(src_path, ipynb_without_button)
+
+        py_path = get_py_path(src_path.parent, src_path)
 
         with tempfile.TemporaryFile() as my_null:
-            check_output(get_nbconvert_python_cmd(src_path, src_after_ipynb_path), stderr=my_null)
+            check_output(get_nbconvert_python_cmd(ipynb_without_button, py_path), stderr=my_null)
 
         # delete ipynb file
         src_path.unlink()
@@ -429,6 +444,19 @@ def verify_processed_ipynb__without_colab_links(src_before_ipynb_path:pathlib.Pa
     return result
 
 
+def get_py_path(folder_path:pathlib.Path, ipynb_full_path:pathlib.Path) -> pathlib.Path:
+    """
+    Get the path of the python file that will be generated from the ipynb file
+    """
+    assert isinstance(folder_path, pathlib.Path)
+    assert folder_path.exists()
+    assert folder_path.is_dir()
+
+    assert isinstance(ipynb_full_path, pathlib.Path)
+
+    return folder_path / (ipynb_full_path.stem + '.py')
+
+
 def verify_processed_ipynb(src_ipynb_path:pathlib.Path, dest_ipynb_path:pathlib.Path, encoding:str="utf-8") -> bool:
     """
     Verify that the processed ipynb is the equivalent to the original
@@ -443,8 +471,9 @@ def verify_processed_ipynb(src_ipynb_path:pathlib.Path, dest_ipynb_path:pathlib.
 
     with tempfile.TemporaryDirectory() as tmpdir:
         tmpdir = pathlib.Path(tmpdir)
-        src_py_path = tmpdir / (src_ipynb_path.stem + '.py')
-        dest_py_path = tmpdir / (dest_ipynb_path.stem + '.py')
+
+        src_py_path = get_py_path(tmpdir, src_ipynb_path)
+        dest_py_path = get_py_path(tmpdir, dest_ipynb_path)
 
         check_output(get_nbconvert_python_cmd(src_ipynb_path, src_py_path))
         check_output(get_nbconvert_python_cmd(dest_ipynb_path, dest_py_path))

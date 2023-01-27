@@ -504,10 +504,18 @@ def test_process_commits(repo_info:Repo_Info):
             org_files = rebase_ipynb.git_diff_fnames(repo, sha_org)
             new_files = rebase_ipynb.git_diff_fnames(repo, sha_new)
 
-            # changed files the same?
-            assert set(org_files) == set(new_files), (
-                f"org_files={org_files} != new_files={new_files}\n"
-            )
+            # check extensions
+            assert all(map(lambda x: x.endswith('.ipynb'), org_files)), (org_files,)
+            assert all(map(lambda x: x.endswith('.py'), new_files)), (new_files,)
+
+            # check number of changed files
+            assert len(org_files) == len(new_files)
+
+            # all files converted?
+            org_name_set = set(map(lambda x: x[:-6], org_files))
+            new_name_set = set(map(lambda x: x[:-3], new_files))
+
+            assert org_name_set == new_name_set
 
             # each changed file produces same .py file?
             for fname in org_files:
@@ -515,28 +523,55 @@ def test_process_commits(repo_info:Repo_Info):
                     with tempfile.TemporaryDirectory() as tmpdir:
                         tmp_path = pathlib.Path(tmpdir)
                         # checkout the original sha
-                        subprocess.check_call(['git', '-c', "advice.detachedHead=false", 'checkout', sha_org, fname], cwd=repo)
+                        subprocess.check_call(
+                            ['git', '-c', "advice.detachedHead=false", 'checkout', sha_org, fname],
+                            cwd=repo
+                        )
                         # original filename after copy
-                        original_fname = tmp_path / ("org_" + fname)
+                        ipynb_fname_from_org_branch = tmp_path / ("org_" + fname)
 
-                        if not original_fname.parent.exists():
-                            original_fname.parent.mkdir(parents=True)
-
-                        # copy the original file to a temporary directory
-                        shutil.copy(repo / fname, original_fname)
-
-                        # checkout the new sha
-                        subprocess.check_call(['git', '-c', "advice.detachedHead=false", 'checkout', sha_new, fname], cwd=repo)
-                        # new filename after copy
-                        new_fname = tmp_path / ("new_" + fname)
-
-                        if not new_fname.parent.exists():
-                            new_fname.parent.mkdir(parents=True)
+                        if not ipynb_fname_from_org_branch.parent.exists():
+                            ipynb_fname_from_org_branch.parent.mkdir(parents=True)
 
                         # copy the original file to a temporary directory
-                        shutil.copy(repo / fname, new_fname)
+                        shutil.copy(repo / fname, ipynb_fname_from_org_branch)
 
-                        assert rebase_ipynb.verify_processed_ipynb(original_fname, new_fname)
+                        py_fname_from_org_branch = ipynb_fname_from_org_branch.with_suffix('.py')
+
+                        subprocess.check_output(
+                            [
+                                'jupyter', 'nbconvert', '--to', "python",
+                                str(ipynb_fname_from_org_branch.absolute()),
+                                '--output', str(py_fname_from_org_branch.absolute())
+                            ],
+                            cwd=tmp_path, stderr=subprocess.DEVNULL, encoding='utf-8'
+                        )
+
+                        assert py_fname_from_org_branch.exists()
+                        assert py_fname_from_org_branch.is_file()
+
+                        # compare the two .py files
+                        org_branch_txt = py_fname_from_org_branch.read_text(encoding="utf-8")
+                        assert isinstance(org_branch_txt, str)
+
+                    # new filename after copy
+                    py_name_in_repo = fname[:-6] + '.py'
+
+                    # checkout the new sha
+                    subprocess.check_call(
+                        ['git', '-c', "advice.detachedHead=false", 'checkout', sha_new, py_name_in_repo],
+                        cwd=repo
+                    )
+                    py_path_in_repo = repo / py_name_in_repo
+
+                    assert py_path_in_repo.exists()
+                    assert py_path_in_repo.is_file()
+
+                    new_branch_txt = py_path_in_repo.read_text(encoding="utf-8")
+
+                    assert org_branch_txt == new_branch_txt, (
+                        f"org: {sha_org} -- {fname} != new: {sha_new} -- {py_name_in_repo}"
+                    )
 
         # first commits are different?
         assert all_sha_inv_org[len(commits_original)-1] != all_sha_inv_new[len(commits_original)-1], (
