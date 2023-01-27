@@ -108,7 +108,8 @@ def get_commit_cmd(commit_info) -> List[str]:
         'git', 'commit',
             '-m', commit_info["message"],
             '--date', commit_info["date"],
-            '--author', f'{commit_info["author"]} <{commit_info["author_email"]}>'
+            '--author', f'{commit_info["author"]} <{commit_info["author_email"]}>',
+            "--committer", f'{commit_info["committer"]} <{commit_info["committer_email"]}>',
     ]
 
 
