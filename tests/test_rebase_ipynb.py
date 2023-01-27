@@ -316,6 +316,9 @@ def test_process_commits(repo:pathlib.Path, commits_original:Tuple[str]):
         cwd=repo, encoding="utf-8"
     ).splitlines()
 
+    # first commit in the all_sha_inv_org
+    assert all_sha_inv_org[len(commits_original)-1].startswith(first_commit)
+
     n_sha_inv_org = all_sha_inv_org[:len(commits_original)]
 
     assert set(n_sha_inv_org) == set(commits_original)
