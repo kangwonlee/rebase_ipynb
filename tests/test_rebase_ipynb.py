@@ -416,6 +416,15 @@ def test_process_commits(repo:pathlib.Path, commits_original:Tuple[str]):
 
                         assert rebase_ipynb.verify_processed_ipynb(original_fname, new_fname)
 
+        # both branches have the same parent?
+        assert all_sha_inv_org[len(commits_original)] == all_sha_inv_new[len(commits_original)], (
+            '\n' +
+            subprocess.check_output(
+                ['git', 'log', '--graph', '--oneline', '--all'],
+                cwd=repo, encoding="utf-8"
+            )
+        )
+
     finally:
         branch_names_finally = subprocess.check_output(['git', 'branch',], cwd=repo, encoding='utf-8')
         branch_names_finally_list = branch_names_finally.splitlines()
