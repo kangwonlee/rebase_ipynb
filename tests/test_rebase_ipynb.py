@@ -385,7 +385,7 @@ def test_process_commits(repo:pathlib.Path, commits_original:Tuple[str]):
                     with tempfile.TemporaryDirectory() as tmpdir:
                         tmp_path = pathlib.Path(tmpdir)
                         # checkout the original sha
-                        subprocess.check_call(['git', 'checkout', sha_org, fname], cwd=repo)
+                        subprocess.check_call(['git', '-c', "advice.detachedHead=false", 'checkout', sha_org, fname], cwd=repo)
                         # original filename after copy
                         original_fname = tmp_path / ("org_" + fname)
 
@@ -393,7 +393,7 @@ def test_process_commits(repo:pathlib.Path, commits_original:Tuple[str]):
                         shutil.copy(repo / fname, original_fname)
 
                         # checkout the new sha
-                        subprocess.check_call(['git', 'checkout', sha_new, fname], cwd=repo)
+                        subprocess.check_call(['git', '-c', "advice.detachedHead=false", 'checkout', sha_new, fname], cwd=repo)
                         # new filename after copy
                         new_fname = tmp_path / ("new_" + fname)
 

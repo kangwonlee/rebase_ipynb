@@ -98,7 +98,7 @@ def check_output(cmd:List[str], repo:pathlib.Path=None) -> str:
 
 
 def get_checkout_cmd(commit):
-    return ['git', 'checkout', commit]
+    return ['git', '-c', "advice.detachedHead=false", 'checkout', commit]
 
 
 def get_add_cmd(files:List[str]) -> List[str]:
