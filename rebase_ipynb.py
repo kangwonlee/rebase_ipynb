@@ -490,7 +490,7 @@ def parse_argv(argv:List[str]) -> argparse.Namespace:
 def main(argv:List[str]):
     parsed = parse_argv(argv[1:])
 
-    process_commits(pathlib.Path(parsed.repo), parsed.first, parsed.last, parsed.branch)
+    process_commits(pathlib.Path(parsed.repo).absolute(), parsed.first, parsed.last, parsed.branch)
 
 
 if __name__ == '__main__':
