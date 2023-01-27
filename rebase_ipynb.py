@@ -158,7 +158,7 @@ def get_commit_message_body(lines:List[str]) -> str:
     body = '\n'.join(
         map(
             lambda s:s.strip(),
-            lines[4:-n_files-1]
+            lines[5:-n_files-1]
         )
     ).strip()
 
