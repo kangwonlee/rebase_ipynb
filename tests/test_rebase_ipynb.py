@@ -310,6 +310,16 @@ def test_process_commits(repo:pathlib.Path, commits_original:Tuple[str]):
     # get the commit before the first commit
     first_commit_parent = rebase_ipynb.git_parent_sha(repo, first_commit)
 
+    # all commits until the last_commit
+    all_sha_inv_org = subprocess.check_output(
+        ['git', 'log', '--pretty=format:%H', last_commit],
+        cwd=repo, encoding="utf-8"
+    ).splitlines()
+
+    n_sha_inv_org = all_sha_inv_org[:len(commits_original)]
+
+    assert set(n_sha_inv_org) == set(commits_original)
+
     # are the commits in the list?
     assert any(
         map(
@@ -352,17 +362,16 @@ def test_process_commits(repo:pathlib.Path, commits_original:Tuple[str]):
             cwd=repo, encoding='utf-8'
         ).splitlines()[1:]
 
-        # same number of commits?
-        assert len(commits_new) == len(commits_original), (
-            '\n' +
-            subprocess.check_output(
-                ['git', 'log', '--oneline', '--graph', "--all"],
-                cwd=repo, encoding="utf-8"
-            )
-        )
+        # all commits until the end of the new branch
+        all_sha_inv_new = subprocess.check_output(
+            ['git', 'log', '--pretty=format:%H', new_branch],
+            cwd=repo, encoding="utf-8"
+        ).splitlines()
+
+        n_sha_inv_new = all_sha_inv_new[:len(commits_original)]
 
         # each commit same info?
-        for sha_org, sha_new in zip(commits_original, commits_new):
+        for sha_org, sha_new in zip(n_sha_inv_org, n_sha_inv_new):
             org_info = rebase_ipynb.git_show_info(repo, sha_org)
             new_info = rebase_ipynb.git_show_info(repo, sha_new)
 
@@ -371,7 +380,7 @@ def test_process_commits(repo:pathlib.Path, commits_original:Tuple[str]):
             )
 
         # each commit changed ipynb files produce same .py files?
-        for sha_org, sha_new in zip(commits_original, commits_new):
+        for sha_org, sha_new in zip(n_sha_inv_org, n_sha_inv_new):
             org_files = rebase_ipynb.git_diff_fnames(repo, sha_org)
             new_files = rebase_ipynb.git_diff_fnames(repo, sha_new)
 
