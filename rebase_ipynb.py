@@ -58,21 +58,37 @@ def process_a_commit(repo:pathlib.Path, commit:str, new_branch:str):
 
     changed_files = git_diff_fnames(repo=repo, commit=commit)
 
-    with tempfile.TemporaryDirectory() as tmpdir:
-        tmpdir = pathlib.Path(tmpdir)
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = pathlib.Path(tmp_dir)
+
+        assert tmp_path.exists()
+        assert tmp_path.is_dir()
 
         for f in changed_files:
-            shutil.copy(repo / f, tmpdir / f)
+            src = repo / f
+            dest = tmp_path / f
+
+            assert src.exists()
+            assert src.is_file()
+
+            shutil.copy(src, dest)
 
         switch_to_temporary_branch(repo, new_branch)
 
         for f in changed_files:
-            shutil.copy(tmpdir / f, repo / f)
+
+            src = tmp_path / f
+            dest = repo / f
+
+            assert src.exists()
+            assert src.is_file()
+
+            shutil.copy(tmp_path / f, repo / f)
 
             if f.endswith('.ipynb'):
                 process_ipynb(repo / f)
 
-                assert verify_processed_ipynb(tmpdir / f, repo / f)
+                assert verify_processed_ipynb(tmp_path / f, repo / f)
 
     git_add(repo=repo, files=changed_files)
     git_commit(
