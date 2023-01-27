@@ -19,6 +19,7 @@ import argparse
 import json
 import os
 import pathlib
+import pprint
 import shutil
 import sys
 import tempfile
@@ -192,16 +193,33 @@ def get_commit_info_from_show(output:str) -> Dict[str, str]:
 
 def get_commit_message_body(lines:List[str]) -> str:
     last_line = lines[-1].strip()
-    n_files_str = last_line.split('file')[0].strip()
-    assert n_files_str.isnumeric(), (last_line, last_line.split('files'))
 
-    n_files = int(n_files_str)
-    body = '\n'.join(
-        map(
-            lambda s:s.strip(),
-            lines[5:-n_files-1]
+    if ("file changed" in last_line) or ("files changed" in last_line):
+        n_files_str = last_line.split('file')[0].strip()
+
+        assert n_files_str.isnumeric(), (
+            pprint.pformat(lines),
+            last_line,
+            last_line.split('files')
         )
-    ).strip()
+
+        n_files = int(n_files_str)
+
+        body = '\n'.join(
+            map(
+                lambda s:s.strip(),
+                lines[5:-n_files-1]
+            )
+        ).strip()
+
+    else:
+        # if no file changed
+        body = '\n'.join(
+            map(
+                lambda s:s.strip(),
+                lines[5:]
+            )
+        ).strip()
 
     return body
 
