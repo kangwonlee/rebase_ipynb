@@ -610,5 +610,51 @@ def test_process_commits(repo_info:Repo_Info):
             )
 
 
+@pytest.fixture
+def commit_output_sample() -> Dict[str, str]:
+
+    branch = "bbb"
+    sha = "123abc"
+    msg = "msgmsgmsg"
+    fname = "fname.txt"
+
+    git_commit_output = (
+        f"[{branch} {sha}] {msg}\n"
+        " 1 file changed, 0 insertions(+), 0 deletions(-)\n"
+        f" create mode 100644 {fname}\n"
+    )
+
+    return {
+        'branch': branch,
+        'sha': sha,
+        'msg': msg,
+        'fname': fname,
+        'git_commit_output': git_commit_output,
+    }
+
+
+def test_get_pattern_branch_sha_msg__one_file_changed(commit_output_sample):
+
+    # functun under test
+    result = rebase_ipynb.get_pattern_branch_sha_msg()
+
+    r = result.match(commit_output_sample['git_commit_output'].splitlines()[0])
+
+    assert r is not None
+    assert r.group('branch') == commit_output_sample['branch']
+    assert r.group('sha') == commit_output_sample['sha']
+    assert r.group('message') == commit_output_sample['msg']
+
+
+def test_get_branch_sha_msg__one_file_changed(commit_output_sample):
+
+    # functun under test
+    result = rebase_ipynb.get_branch_sha_msg(commit_output_sample['git_commit_output'])
+
+    assert result['branch'] == commit_output_sample['branch']
+    assert result['sha'] == commit_output_sample['sha']
+    assert result['message'] == commit_output_sample['msg']
+
+
 if '__main__' == __name__:
     pytest.main([__file__])

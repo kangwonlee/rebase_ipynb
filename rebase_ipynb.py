@@ -16,10 +16,12 @@ Result
 """
 
 import argparse
+import functools
 import json
 import os
 import pathlib
 import pprint
+import re
 import shutil
 import sys
 import tempfile
@@ -28,7 +30,12 @@ import subprocess
 from typing import Dict, List, Tuple
 
 
-def process_commits(repo:pathlib.Path, first_commit:str, last_commit:str, new_branch:str):
+def process_commits(
+        repo:pathlib.Path,
+        first_commit:str,
+        last_commit:str,
+        new_branch:str
+    ) -> Tuple[str]:
 
     start_parent = git_parent_sha(repo=repo, commit=first_commit)
 
@@ -41,8 +48,12 @@ def process_commits(repo:pathlib.Path, first_commit:str, last_commit:str, new_br
 
     start_temporary_branch_head(repo=repo, start_parent=start_parent, new_branch=new_branch)
 
+    new_sha_list = []
     for commit in commit_list:
-        process_a_commit(repo=repo, commit=commit, new_branch=new_branch)
+        new_sha = process_a_commit(repo=repo, commit=commit, new_branch=new_branch)
+        new_sha_list.append((commit, new_sha))
+
+    return tuple(new_sha_list)
 
 
 def reset_target_repo(repo, new_branch):
@@ -57,7 +68,7 @@ def reset_target_repo(repo, new_branch):
         git_branch_D(repo=repo, branch=new_branch)
 
 
-def process_a_commit(repo:pathlib.Path, commit:str, new_branch:str):
+def process_a_commit(repo:pathlib.Path, commit:str, new_branch:str) -> str:
     """
     Checkout the commit
     Get the commit info
@@ -131,10 +142,12 @@ def process_a_commit(repo:pathlib.Path, commit:str, new_branch:str):
                 add_list.append(f)
 
     git_add(repo=repo, files=add_list)
-    git_commit(
+    new_sha = git_commit(
         repo=repo,
         commit_info=commit_info
     )
+
+    return new_sha
 
 
 def git_checkout(repo:pathlib.Path, commit:str):
@@ -145,11 +158,31 @@ def git_add(repo:pathlib.Path, files:List[str]):
     check_output(get_add_cmd(files), repo=repo)
 
 
-def git_commit(repo:pathlib.Path, commit_info:Dict[str, str]):
+def git_commit(repo:pathlib.Path, commit_info:Dict[str, str]) -> str:
     git_config_committer_name(repo, commit_info)
     git_config_committer_email(repo, commit_info)
     set_commit_date(commit_info)
-    check_output(get_commit_cmd(commit_info), repo=repo)
+
+    output = check_output(get_commit_cmd(commit_info), repo=repo)
+
+    commit_info = get_branch_sha_msg(output)
+
+    return commit_info["sha"]
+
+
+@functools.lru_cache()
+def get_pattern_branch_sha_msg() -> re.Pattern:
+    # expected output
+    # "[<branch> <sha>] <message>\n"
+    # " 1 file changed, 0 insertions(+), 0 deletions(-)\n"
+    # " create mode 100644 <file name>\n"
+    return re.compile(r'\[(?P<branch>.*)\s+(?P<sha>.*)\] (?P<message>.*)')
+
+
+def get_branch_sha_msg(txt:str, pattern:re.Pattern=get_pattern_branch_sha_msg()) -> Dict[str, str]:
+    lines = txt.splitlines()
+    r0 = pattern.match(lines[0])
+    return {'branch': r0.group('branch'), 'sha': r0.group('sha'), 'message': r0.group('message')}
 
 
 def set_commit_date(commit_info:Dict[str, str]):
