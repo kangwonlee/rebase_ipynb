@@ -99,7 +99,7 @@ def test_get_commit_info_from_show__two_files_changed():
         "also removed start_temporary_branch() to avoid confusion\n"
         "\n"
         "for this application, the original intention was\n"
-        "to start the temporary branch at the HEAD of the first commit\n"
+        "to start the temporary branch at the HEAD of the first commit"
     )
 
 
@@ -125,7 +125,7 @@ def test_get_commit_info_from_show__one_file_changed():
     assert result['author_email'] == "kangwon.lee@tukorea.ac.kr"
     assert result['date'] == "Sat Nov 19 09:55:32 2022 +0900"
     assert result['message'] == (
-        "init_other_columns()" + '\n'
+        "init_other_columns()"
     )
 
 
