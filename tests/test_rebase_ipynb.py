@@ -488,16 +488,7 @@ def test_process_commits(repo_info:Repo_Info):
 
         # each commit same info?
         for sha_org, sha_new in zip(n_sha_inv_org, n_sha_inv_new):
-            org_info = rebase_ipynb.git_show_info(repo, sha_org)
-            new_info = rebase_ipynb.git_show_info(repo, sha_new)
-
-            # cannot be the same
-            del org_info['sha']
-            del new_info['sha']
-
-            assert org_info == new_info, (
-                f"org_info={org_info} != new_info={new_info}\n"
-            )
+            compare_commit_info(repo, sha_org, sha_new)
 
         # each commit changed ipynb files produce same .py files?
         for sha_org, sha_new in zip(n_sha_inv_org, n_sha_inv_new):
@@ -608,6 +599,19 @@ def test_process_commits(repo_info:Repo_Info):
                 ['git', 'branch', '-D', new_branch],
                 cwd=repo,
             )
+
+
+def compare_commit_info(repo, sha_org, sha_new):
+    org_info = rebase_ipynb.git_show_info(repo, sha_org)
+    new_info = rebase_ipynb.git_show_info(repo, sha_new)
+
+    # cannot be the same
+    del org_info['sha']
+    del new_info['sha']
+
+    assert org_info == new_info, (
+        f"org_info={org_info} != new_info={new_info}\n"
+    )
 
 
 @pytest.fixture
