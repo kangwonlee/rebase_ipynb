@@ -366,12 +366,6 @@ def test_process_commits(repo:pathlib.Path):
         branch_names = tuple(map(lambda x: x.strip(" *"), git_branch_result.splitlines()))
         assert new_branch in branch_names
 
-        # commit hashes in new branch?
-        commits_new = subprocess.check_output(
-            ['git', 'log', '--reverse', '--pretty=format:%H', f'{start_parent}..{new_branch}'],
-            cwd=repo, encoding='utf-8'
-        ).splitlines()[1:]
-
         # all commits until the end of the new branch
         all_sha_inv_new = subprocess.check_output(
             ['git', 'log', '--pretty=format:%H', new_branch],
