@@ -65,9 +65,11 @@ def commits_original() -> Tuple[str]:
 
 def test_get_commit_info_from_show__two_files_changed():
     git_show_msg = (
-        "commit c759024d70d6719b33cc8e10533f2bcdbcd18abe (HEAD -> temporary-branch)\n"
-        "Author: KangWon LEE <kangwon.lee@tukorea.ac.kr>\n"
-        "Date:   Wed Jan 18 20:57:54 2023 +0900\n"
+        "commit c759024d70d6719b33cc8e10533f2bcdbcd18abe\n"
+        "Author:     KangWon LEE <kangwon.lee@tukorea.ac.kr>\n"
+        "AuthorDate: Wed Jan 18 20:57:54 2023 +0900\n"
+        "Commit:     KangWon LEE <kangwon.lee@tukorea.ac.kr>\n"
+        "CommitDate: Wed Jan 18 20:57:54 2023 +0900\n"
         "\n"
         "    checkout_head() -> start_temporary_branch_head()\n"
         "\n"
@@ -88,6 +90,9 @@ def test_get_commit_info_from_show__two_files_changed():
     assert result['author'] == "KangWon LEE"
     assert result['author_email'] == "kangwon.lee@tukorea.ac.kr"
     assert result['date'] == "Wed Jan 18 20:57:54 2023 +0900"
+    assert result['committer'] == "KangWon LEE"
+    assert result['committer_email'] == "kangwon.lee@tukorea.ac.kr"
+    assert result['commit_date'] == "Wed Jan 18 20:57:54 2023 +0900"
     assert result['message'] == (
         "checkout_head() -> start_temporary_branch_head()\n"
         "\n"
@@ -101,8 +106,10 @@ def test_get_commit_info_from_show__two_files_changed():
 def test_get_commit_info_from_show__one_file_changed():
     git_show_msg = (
         "commit 717ed6844017766e040d49e6dd562d153aa2bb44\n"
-        "Author: KangWon LEE <kangwon.lee@tukorea.ac.kr>\n"
-        "Date:   Sat Nov 19 09:55:32 2022 +0900\n"
+        "Author:     KangWon LEE <kangwon.lee@tukorea.ac.kr>\n"
+        "AuthorDate: Sat Nov 19 09:55:32 2022 +0900\n"
+        "Commit:     KangWon LEE <kangwon.lee@tukorea.ac.kr>\n"
+        "CommitDate: Sat Nov 19 09:55:32 2022 +0900\n"
         "\n"
         "    init_other_columns()\n"
         "\n"

@@ -122,7 +122,7 @@ def git_show_info(repo:pathlib.Path, commit:str) -> Dict[str, str]:
 
 
 def get_show_stat_commit(commit:str) -> List[str]:
-    return ['git', 'show', '--stat', commit]
+    return ['git', 'show', '--stat', "--format=fuller",commit]
 
 
 def git_parent_sha(repo:pathlib.Path, commit:str) -> str:
@@ -139,6 +139,9 @@ def get_commit_info_from_show(output:str) -> Dict[str, str]:
         "author": lines[1].split('Author:')[1].strip().split('<')[0].strip(),
         "author_email": lines[1].split('<')[1].strip().strip('>'),
         "date": lines[2].split('Date:')[1].strip(),
+        "committer": lines[3].split('Commit:')[1].strip().split('<')[0].strip(),
+        "committer_email": lines[3].split('<')[1].strip().strip('>'),
+        "commit_date": lines[4].split('Date:')[1].strip(),
         'message': body,
     }
 
@@ -156,7 +159,7 @@ def get_commit_message_body(lines:List[str]) -> str:
             lambda s:s.strip(),
             lines[4:-n_files-1]
         )
-    )
+    ).strip()
 
     return body
 
@@ -403,3 +406,8 @@ def remove_colab_button(src_ipynb_path:pathlib.Path, dest_ipynb_path:pathlib.Pat
 
     with dest_ipynb_path.open('w') as f:
         json.dump(ipynb_json, f)
+
+
+def get_commiter_info_hash(repo, sha:str):
+    commit = repo.commit(sha)
+    return commit.committer.email, commit.committer.name, commit.committer.date
