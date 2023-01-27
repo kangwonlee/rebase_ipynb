@@ -390,8 +390,8 @@ def get_nbconvert_ipynb_cmd(src_path:pathlib.Path, src_after_ipynb_path:pathlib.
     return ['jupyter', 'nbconvert', "--to", "notebook", str(src_after_ipynb_path), "--output", str(src_path)]
 
 
-def remove_metadata_id(src_path:pathlib.Path, dest_path:pathlib.Path):
-    ipynb_json = json.loads(src_path.read_text())
+def remove_metadata_id(src_path:pathlib.Path, dest_path:pathlib.Path, encoding:str="utf-8"):
+    ipynb_json = json.loads(src_path.read_text(encoding=encoding))
 
     for cell in ipynb_json["cells"]:
         if "metadata" in cell:
@@ -429,7 +429,7 @@ def verify_processed_ipynb__without_colab_links(src_before_ipynb_path:pathlib.Pa
     return result
 
 
-def verify_processed_ipynb(src_ipynb_path:pathlib.Path, dest_ipynb_path:pathlib.Path) -> bool:
+def verify_processed_ipynb(src_ipynb_path:pathlib.Path, dest_ipynb_path:pathlib.Path, encoding:str="utf-8") -> bool:
     """
     Verify that the processed ipynb is the equivalent to the original
     """
@@ -455,8 +455,8 @@ def verify_processed_ipynb(src_ipynb_path:pathlib.Path, dest_ipynb_path:pathlib.
         assert dest_py_path.exists()
         assert dest_py_path.is_file()
 
-        txt1 = src_py_path.read_text()
-        txt2 = dest_py_path.read_text()
+        txt1 = src_py_path.read_text(encoding=encoding)
+        txt2 = dest_py_path.read_text(encoding=encoding)
 
     return txt1 == txt2
 
@@ -465,12 +465,12 @@ def get_nbconvert_python_cmd(ipynb_path:pathlib.Path, py_path:pathlib.Path) -> L
     return ['jupyter', 'nbconvert', "--to", "python", str(ipynb_path), "--output", str(py_path)]
 
 
-def remove_colab_button(src_ipynb_path:pathlib.Path, dest_ipynb_path:pathlib.Path):
+def remove_colab_button(src_ipynb_path:pathlib.Path, dest_ipynb_path:pathlib.Path, encoding:str="utf-8"):
     assert src_ipynb_path.exists()
     assert src_ipynb_path.is_file()
     assert src_ipynb_path.suffix == '.ipynb'
 
-    ipynb_json = json.loads(src_ipynb_path.read_text())
+    ipynb_json = json.loads(src_ipynb_path.read_text(encoding=encoding))
 
     assert 'cells' in ipynb_json
     assert isinstance(ipynb_json['cells'], list)

@@ -329,7 +329,7 @@ def test_remove_metadata_id__eq_local():
     assert src_ipynb_path.is_file()
     assert src_ipynb_path.suffix == '.ipynb'
 
-    src_ipynb_json = json.loads(src_ipynb_path.read_text())
+    src_ipynb_json = json.loads(src_ipynb_path.read_text(encoding="utf-8"))
     # has hash values?
 
     result = False
