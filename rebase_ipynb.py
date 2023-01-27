@@ -17,6 +17,7 @@ Result
 
 import argparse
 import json
+import os
 import pathlib
 import shutil
 import tempfile
@@ -90,7 +91,17 @@ def git_add(repo:pathlib.Path, files:List[str]):
 def git_commit(repo:pathlib.Path, commit_info:Dict[str, str]):
     git_config_committer_name(repo, commit_info)
     git_config_committer_email(repo, commit_info)
+    set_commit_date(commit_info)
     check_output(get_commit_cmd(commit_info), repo=repo)
+
+
+def set_commit_date(commit_info:Dict[str, str]):
+    """
+    Set the commit date
+
+    https://stackoverflow.com/questions/454734
+    """
+    os.environ["GIT_COMMITTER_DATE"] = commit_info["commit_date"]
 
 
 def check_output(cmd:List[str], repo:pathlib.Path=None) -> str:
