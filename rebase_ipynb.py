@@ -72,6 +72,9 @@ def process_a_commit(repo:pathlib.Path, commit:str, new_branch:str):
             assert src.exists()
             assert src.is_file()
 
+            assert dest.parent.exists()
+            assert dest.parent.is_dir()
+
             shutil.copy(src, dest)
 
         switch_to_temporary_branch(repo, new_branch)
@@ -83,6 +86,9 @@ def process_a_commit(repo:pathlib.Path, commit:str, new_branch:str):
 
             assert src.exists()
             assert src.is_file()
+
+            assert dest.parent.exists()
+            assert dest.parent.is_dir()
 
             shutil.copy(tmp_path / f, repo / f)
 
