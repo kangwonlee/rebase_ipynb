@@ -134,8 +134,8 @@ def set_commit_date(commit_info:Dict[str, str]):
     os.environ["GIT_COMMITTER_DATE"] = commit_info["commit_date"]
 
 
-def check_output(cmd:List[str], repo:pathlib.Path=None) -> str:
-    return subprocess.check_output(cmd, cwd=repo, encoding='utf-8')
+def check_output(cmd:List[str], repo:pathlib.Path=None, stderr=None) -> str:
+    return subprocess.check_output(cmd, cwd=repo, encoding='utf-8', stderr=stderr)
 
 
 def get_checkout_cmd(commit):
@@ -349,7 +349,8 @@ def process_ipynb(src_path:pathlib.Path):
 
         remove_colab_button(src_path, src_after_ipynb_path)
 
-        check_output(get_nbconvert_ipynb_cmd(src_path, src_after_ipynb_path))
+        with tempfile.TemporaryFile() as my_null:
+            check_output(get_nbconvert_ipynb_cmd(src_path, src_after_ipynb_path), stderr=my_null)
 
     remove_metadata_id(src_path, src_path)
 
