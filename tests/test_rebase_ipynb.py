@@ -133,7 +133,7 @@ def test_start_temporary_branch_head__switch_to_temporary_branch(repo:pathlib.Pa
     new_branch_name = 'rebase_ipynb_test'
 
     # function under test 1
-    rebase_ipynb.start_temporary_branch_head(repo, commit="HEAD", new_branch=new_branch_name)
+    rebase_ipynb.start_temporary_branch_head(repo, start_parent="HEAD^", new_branch=new_branch_name)
 
     # list of branch names
     output = subprocess.check_output(['git', 'branch'], cwd=repo, encoding='utf-8')
@@ -154,7 +154,10 @@ def test_start_temporary_branch_head__switch_to_temporary_branch(repo:pathlib.Pa
 def test_get_checkout_head_cmd():
     commit = '1234567890'
     new_branch = 'rebase_ipynb_test'
-    result = rebase_ipynb.get_checkout_head_cmd(commit, new_branch)
+    result = rebase_ipynb.get_checkout_head_cmd(
+        start_parent=commit+'^',
+        new_branch=new_branch
+    )
 
     assert result == f'git checkout {commit}^ -b {new_branch}'.split()
 

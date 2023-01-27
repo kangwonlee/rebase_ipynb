@@ -36,7 +36,7 @@ def process_commits(repo:pathlib.Path, first_commit:str, last_commit:str, new_br
     assert any(map(lambda x: x.startswith(first_commit), commit_list)), (first_commit, commit_list)
     assert any(map(lambda x: x.startswith(last_commit), commit_list)), (last_commit, commit_list)
 
-    start_temporary_branch_head(repo=repo, commit=start_parent, new_branch=new_branch)
+    start_temporary_branch_head(repo=repo, start_parent=start_parent, new_branch=new_branch)
 
     for commit in commit_list:
         process_a_commit(repo=repo, commit=commit, new_branch=new_branch)
@@ -216,14 +216,14 @@ def assert_git_repo(repo:pathlib.Path) -> bool:
     assert repo_git_path.is_dir()
 
 
-def start_temporary_branch_head(repo:pathlib.Path, commit:str, new_branch:str=None):
+def start_temporary_branch_head(repo:pathlib.Path, start_parent:str, new_branch:str=None):
     assert_git_repo(repo)
 
-    check_output(get_checkout_head_cmd(commit, new_branch), repo=repo)
+    check_output(get_checkout_head_cmd(start_parent, new_branch), repo=repo)
 
 
-def get_checkout_head_cmd(commit:str, new_branch:str) -> List[str]:
-    cmd = ['git', 'checkout', commit+'^']
+def get_checkout_head_cmd(start_parent:str, new_branch:str=None) -> List[str]:
+    cmd = ['git', 'checkout', start_parent]
 
     if new_branch is not None:
         cmd += ['-b', new_branch]
