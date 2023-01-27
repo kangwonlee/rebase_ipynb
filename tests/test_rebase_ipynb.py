@@ -239,7 +239,7 @@ def test_start_temporary_branch_head__switch_to_temporary_branch(repo_info:Repo_
     assert any(map(lambda s:s.endswith(new_branch_name), output_lines)), f"output_lines = {output_lines}"
 
     # function under test 2
-    rebase_ipynb.switch_to_temporary_branch(repo_info, "main")
+    rebase_ipynb.git_switch(repo_info, "main")
     output = subprocess.check_output(['git', 'branch'], cwd=repo_info, encoding='utf-8')
 
     # get current branch name

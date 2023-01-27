@@ -37,10 +37,24 @@ def process_commits(repo:pathlib.Path, first_commit:str, last_commit:str, new_br
     assert any(map(lambda x: x.startswith(first_commit), commit_list)), (first_commit, commit_list)
     assert any(map(lambda x: x.startswith(last_commit), commit_list)), (last_commit, commit_list)
 
+    reset_target_repo(repo, new_branch)
+
     start_temporary_branch_head(repo=repo, start_parent=start_parent, new_branch=new_branch)
 
     for commit in commit_list:
         process_a_commit(repo=repo, commit=commit, new_branch=new_branch)
+
+
+def reset_target_repo(repo, new_branch):
+    """
+    Reset the target repo to the main branch
+    """
+    if new_branch == git_branch_current(repo=repo):
+        git_switch(repo=repo, branch='main')
+
+    if new_branch in git_branch(repo=repo):
+        git_reset_hard(repo=repo, ref="HEAD")
+        git_branch_D(repo=repo, branch=new_branch)
 
 
 def process_a_commit(repo:pathlib.Path, commit:str, new_branch:str):
@@ -80,7 +94,7 @@ def process_a_commit(repo:pathlib.Path, commit:str, new_branch:str):
 
             shutil.copy(src, dest)
 
-        switch_to_temporary_branch(repo, new_branch)
+        git_switch(repo, new_branch)
 
         for f in changed_files:
 
@@ -262,7 +276,7 @@ def get_checkout_head_cmd(start_parent:str, new_branch:str=None) -> List[str]:
     return cmd
 
 
-def switch_to_temporary_branch(repo:pathlib.Path, branch:str):
+def git_switch(repo:pathlib.Path, branch:str):
     assert_git_repo(repo)
 
     check_output(get_switch_cmd(branch), repo=repo)
@@ -313,7 +327,7 @@ def get_switch_c_cmd(commit:str, branch:str) -> List[str]:
     return ['git', 'switch', commit, '-c', branch]
 
 
-def get_current_branch(repo:pathlib.Path) -> str:
+def git_branch_current(repo:pathlib.Path) -> str:
     return check_output(
         get_current_branch_cmd(),
         repo=repo
@@ -324,6 +338,14 @@ def get_current_branch_cmd() -> List[str]:
     return ['git', 'branch', '--show-current']
 
 
+def git_branch_D(repo:pathlib.Path, branch:str):
+    check_output(get_branch_D_cmd(branch), repo=repo)
+
+
+def get_branch_D_cmd(branch:str) -> List[str]:
+    return ['git', 'branch', '-D', branch]
+
+
 def git_branch(repo:pathlib.Path) -> Tuple[str]:
     return tuple(
         check_output(get_branch_cmd(), repo=repo).splitlines()
@@ -332,6 +354,14 @@ def git_branch(repo:pathlib.Path) -> Tuple[str]:
 
 def get_branch_cmd() -> List[str]:
     return ['git', 'branch']
+
+
+def git_reset_hard(repo:pathlib.Path, ref:str):
+    check_output(get_reset_hard_cmd(ref), repo=repo)
+
+
+def get_reset_hard_cmd(ref:str) -> List[str]:
+    return ['git', 'reset', '--hard', ref]
 
 
 def process_ipynb(src_path:pathlib.Path):
