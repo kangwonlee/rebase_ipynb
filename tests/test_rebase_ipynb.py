@@ -314,8 +314,8 @@ def test_process_commits(repo:pathlib.Path):
     # get the commits between the first and the last commit
     commits_original = rebase_ipynb.git_log_hash(repo, start_parent, last_commit)
 
-    assert commits_original[0].startswith(first_commit)
-    assert commits_original[-1].startswith(last_commit)
+    assert commits_original[0].startswith(first_commit), (first_commit, commits_original)
+    assert commits_original[-1].startswith(last_commit), (commits_original, last_commit)
 
     # all commits until the last_commit
     all_sha_inv_org = subprocess.check_output(
