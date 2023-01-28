@@ -179,6 +179,61 @@ def repo_info(request) -> Repo_Info:
         }
 
 
+@pytest.fixture(scope='session')
+def new_branch() -> str:
+    """
+    new branch name with a random integer
+    """
+    return f'test_branch_{random.randint(0, (2**4)**8):08x}'
+
+
+@pytest.fixture(scope='session')
+def process_commits_test_setup(repo_info:Repo_Info, new_branch:str) -> Dict[str, str]:
+    repo = repo_info['path']
+    first_commit = repo_info['first']
+    last_commit = repo_info['last']
+
+    try:
+        #####################
+        # function under test
+        org_new_sha_list = rebase_ipynb.process_commits(
+            repo,
+            first_commit, last_commit,
+            new_branch
+        )
+        #####################
+
+        # all commits until the end of the new branch
+        all_sha_inv_new = subprocess.check_output(
+            ['git', 'log', '--pretty=format:%H', new_branch],
+            cwd=repo, encoding="utf-8"
+        ).splitlines()
+
+        result = dict(repo_info)
+        result['org_new_sha_list'] = org_new_sha_list
+        result['new_branch'] = new_branch
+        result['all_sha_inv_new'] = all_sha_inv_new
+
+        yield result
+    finally:
+        branch_names_finally = subprocess.check_output(['git', 'branch',], cwd=repo, encoding='utf-8')
+        branch_names_finally_list = branch_names_finally.splitlines()
+
+        was_branch_created = any(map(lambda x: x.strip(" *") == new_branch, branch_names_finally_list))
+
+        if was_branch_created:
+            subprocess.run(
+                ['git', 'switch', "--force", 'main'],
+                cwd=repo,
+            )
+
+            # delete the new branch
+            subprocess.run(
+                ['git', 'branch', '-D', new_branch],
+                cwd=repo,
+            )
+
+
 def test_get_commit_info_from_show__two_files_changed():
     git_show_msg = (
         "commit c759024d70d6719b33cc8e10533f2bcdbcd18abe\n"
@@ -462,92 +517,50 @@ def test_fixture_org_sha_log(repo_info:Repo_Info):
     assert repo_info['start_parent'] == repo_info['all_sha_inv_org'][len(sha_org_short)]
 
 
-@pytest.fixture
-def new_branch() -> str:
-    """
-    new branch name with a random integer
-    """
-    return f'test_branch_{random.randint(0, (2**4)**8):08x}'
+def test_process_commits(process_commits_test_setup:Dict[str, str]):
 
+    repo = process_commits_test_setup["path"]
+    commits_original = process_commits_test_setup["commits_original"]
+    new_branch = process_commits_test_setup["new_branch"]
+    
+    all_sha_inv_org = process_commits_test_setup['all_sha_inv_org']
 
-def test_process_commits(repo_info:Repo_Info, new_branch:str):
-
-    repo = repo_info["path"]
-
-    first_commit = repo_info["first"]
-    last_commit = repo_info["last"]
-
-    # get the commits between the first and the last commit
-    commits_original = repo_info["commits_original"]
-
-    # all commits until the last_commit
-    all_sha_inv_org = repo_info['all_sha_inv_org']
+    # all commits until the end of the new branch
+    all_sha_inv_new = process_commits_test_setup['all_sha_inv_new']
 
     n_sha_inv_org = all_sha_inv_org[:len(commits_original)]
+    n_sha_inv_new = all_sha_inv_new[:len(commits_original)]
 
-    try:
+    # new branch exists?
+    git_branch_result = subprocess.check_output(['git', 'branch',], cwd=repo, encoding='utf-8')
+    branch_names = tuple(map(lambda x: x.strip(" *"), git_branch_result.splitlines()))
+    assert new_branch in branch_names
 
-        #####################
-        # function under test
-        rebase_ipynb.process_commits(repo, first_commit, last_commit, new_branch)
-        #####################
+    # each commit same info?
+    for sha_org, sha_new in zip(n_sha_inv_org, n_sha_inv_new):
+        compare_commit_info(repo, sha_org, sha_new)
 
-        # new branch exists?
-        git_branch_result = subprocess.check_output(['git', 'branch',], cwd=repo, encoding='utf-8')
-        branch_names = tuple(map(lambda x: x.strip(" *"), git_branch_result.splitlines()))
-        assert new_branch in branch_names
+    # each commit changed ipynb files produce same .py files?
+    for sha_org, sha_new in zip(n_sha_inv_org, n_sha_inv_new):
+        compare_ipynb_py(repo, sha_org, sha_new)
 
-        # all commits until the end of the new branch
-        all_sha_inv_new = subprocess.check_output(
-            ['git', 'log', '--pretty=format:%H', new_branch],
+    # first commits are different?
+    assert all_sha_inv_org[len(commits_original)-1] != all_sha_inv_new[len(commits_original)-1], (
+        '\n' +
+        subprocess.check_output(
+            ['git', 'log', '--graph', '--oneline', '--all'],
             cwd=repo, encoding="utf-8"
-        ).splitlines()
-
-        n_sha_inv_new = all_sha_inv_new[:len(commits_original)]
-
-        # each commit same info?
-        for sha_org, sha_new in zip(n_sha_inv_org, n_sha_inv_new):
-            compare_commit_info(repo, sha_org, sha_new)
-
-        # each commit changed ipynb files produce same .py files?
-        for sha_org, sha_new in zip(n_sha_inv_org, n_sha_inv_new):
-            compare_ipynb_py(repo, sha_org, sha_new)
-
-        # first commits are different?
-        assert all_sha_inv_org[len(commits_original)-1] != all_sha_inv_new[len(commits_original)-1], (
-            '\n' +
-            subprocess.check_output(
-                ['git', 'log', '--graph', '--oneline', '--all'],
-                cwd=repo, encoding="utf-8"
-            )
         )
+    )
 
-        # both branches have the same parent?
-        assert all_sha_inv_org[len(commits_original)] == all_sha_inv_new[len(commits_original)], (
-            '\n' +
-            subprocess.check_output(
-                ['git', 'log', '--graph', '--oneline', '--all'],
-                cwd=repo, encoding="utf-8"
-            )
+    # both branches have the same parent?
+    assert all_sha_inv_org[len(commits_original)] == all_sha_inv_new[len(commits_original)], (
+        '\n' +
+        subprocess.check_output(
+            ['git', 'log', '--graph', '--oneline', '--all'],
+            cwd=repo, encoding="utf-8"
         )
-
-    finally:
-        branch_names_finally = subprocess.check_output(['git', 'branch',], cwd=repo, encoding='utf-8')
-        branch_names_finally_list = branch_names_finally.splitlines()
-
-        was_branch_created = any(map(lambda x: x.strip(" *") == new_branch, branch_names_finally_list))
-
-        if was_branch_created:
-            subprocess.run(
-                ['git', 'switch', "--force", 'main'],
-                cwd=repo,
-            )
-
-            # delete the new branch
-            subprocess.run(
-                ['git', 'branch', '-D', new_branch],
-                cwd=repo,
-            )
+    )
 
 
 def compare_ipynb_py(repo, sha_org, sha_new):
