@@ -16,10 +16,12 @@ Result
 """
 
 import argparse
+import functools
 import json
 import os
 import pathlib
 import pprint
+import re
 import shutil
 import sys
 import tempfile
@@ -28,7 +30,12 @@ import subprocess
 from typing import Dict, List, Tuple
 
 
-def process_commits(repo:pathlib.Path, first_commit:str, last_commit:str, new_branch:str):
+def process_commits(
+        repo:pathlib.Path,
+        first_commit:str,
+        last_commit:str,
+        new_branch:str
+    ) -> Tuple[str]:
 
     start_parent = git_parent_sha(repo=repo, commit=first_commit)
 
@@ -37,13 +44,31 @@ def process_commits(repo:pathlib.Path, first_commit:str, last_commit:str, new_br
     assert any(map(lambda x: x.startswith(first_commit), commit_list)), (first_commit, commit_list)
     assert any(map(lambda x: x.startswith(last_commit), commit_list)), (last_commit, commit_list)
 
+    reset_target_repo(repo, new_branch)
+
     start_temporary_branch_head(repo=repo, start_parent=start_parent, new_branch=new_branch)
 
+    new_sha_list = []
     for commit in commit_list:
-        process_a_commit(repo=repo, commit=commit, new_branch=new_branch)
+        new_sha = process_a_commit(repo=repo, commit=commit, new_branch=new_branch)
+        new_sha_list.append((commit, new_sha))
+
+    return tuple(new_sha_list)
 
 
-def process_a_commit(repo:pathlib.Path, commit:str, new_branch:str):
+def reset_target_repo(repo, new_branch):
+    """
+    Reset the target repo to the main branch
+    """
+    if new_branch == git_branch_current(repo=repo):
+        git_switch(repo=repo, branch='main')
+
+    if new_branch in git_branch(repo=repo):
+        git_reset_hard(repo=repo, ref="HEAD")
+        git_branch_D(repo=repo, branch=new_branch)
+
+
+def process_a_commit(repo:pathlib.Path, commit:str, new_branch:str) -> str:
     """
     Checkout the commit
     Get the commit info
@@ -80,7 +105,9 @@ def process_a_commit(repo:pathlib.Path, commit:str, new_branch:str):
 
             shutil.copy(src, dest)
 
-        switch_to_temporary_branch(repo, new_branch)
+        git_switch(repo, new_branch)
+
+        add_list = []
 
         for f in changed_files:
 
@@ -96,18 +123,31 @@ def process_a_commit(repo:pathlib.Path, commit:str, new_branch:str):
             assert dest.parent.exists()
             assert dest.parent.is_dir()
 
-            shutil.copy(tmp_path / f, repo / f)
+            shutil.copy(src, dest)
 
             if f.endswith('.ipynb'):
-                process_ipynb(repo / f)
+                process_ipynb(dest)
 
-                assert verify_processed_ipynb(tmp_path / f, repo / f)
+                dest_py = get_py_path(dest.parent, dest)
 
-    git_add(repo=repo, files=changed_files)
-    git_commit(
+                assert dest_py.exists()
+                assert dest_py.is_file()
+
+                # is dest_py in the repo?
+                assert repo in dest_py.parents
+
+                # https://stackoverflow.com/questions/54401973
+                add_list.append(str(dest_py.relative_to(repo)))
+            else:
+                add_list.append(f)
+
+    git_add(repo=repo, files=add_list)
+    new_sha = git_commit(
         repo=repo,
         commit_info=commit_info
     )
+
+    return new_sha
 
 
 def git_checkout(repo:pathlib.Path, commit:str):
@@ -118,11 +158,31 @@ def git_add(repo:pathlib.Path, files:List[str]):
     check_output(get_add_cmd(files), repo=repo)
 
 
-def git_commit(repo:pathlib.Path, commit_info:Dict[str, str]):
+def git_commit(repo:pathlib.Path, commit_info:Dict[str, str]) -> str:
     git_config_committer_name(repo, commit_info)
     git_config_committer_email(repo, commit_info)
     set_commit_date(commit_info)
-    check_output(get_commit_cmd(commit_info), repo=repo)
+
+    output = check_output(get_commit_cmd(commit_info), repo=repo)
+
+    commit_info = get_branch_sha_msg(output)
+
+    return commit_info["sha"]
+
+
+@functools.lru_cache()
+def get_pattern_branch_sha_msg() -> re.Pattern:
+    # expected output
+    # "[<branch> <sha>] <message>\n"
+    # " 1 file changed, 0 insertions(+), 0 deletions(-)\n"
+    # " create mode 100644 <file name>\n"
+    return re.compile(r'\[(?P<branch>.*)\s+(?P<sha>.*)\] (?P<message>.*)')
+
+
+def get_branch_sha_msg(txt:str, pattern:re.Pattern=get_pattern_branch_sha_msg()) -> Dict[str, str]:
+    lines = txt.splitlines()
+    r0 = pattern.match(lines[0])
+    return {'branch': r0.group('branch'), 'sha': r0.group('sha'), 'message': r0.group('message')}
 
 
 def set_commit_date(commit_info:Dict[str, str]):
@@ -262,7 +322,7 @@ def get_checkout_head_cmd(start_parent:str, new_branch:str=None) -> List[str]:
     return cmd
 
 
-def switch_to_temporary_branch(repo:pathlib.Path, branch:str):
+def git_switch(repo:pathlib.Path, branch:str):
     assert_git_repo(repo)
 
     check_output(get_switch_cmd(branch), repo=repo)
@@ -313,7 +373,7 @@ def get_switch_c_cmd(commit:str, branch:str) -> List[str]:
     return ['git', 'switch', commit, '-c', branch]
 
 
-def get_current_branch(repo:pathlib.Path) -> str:
+def git_branch_current(repo:pathlib.Path) -> str:
     return check_output(
         get_current_branch_cmd(),
         repo=repo
@@ -324,6 +384,14 @@ def get_current_branch_cmd() -> List[str]:
     return ['git', 'branch', '--show-current']
 
 
+def git_branch_D(repo:pathlib.Path, branch:str):
+    check_output(get_branch_D_cmd(branch), repo=repo)
+
+
+def get_branch_D_cmd(branch:str) -> List[str]:
+    return ['git', 'branch', '-D', branch]
+
+
 def git_branch(repo:pathlib.Path) -> Tuple[str]:
     return tuple(
         check_output(get_branch_cmd(), repo=repo).splitlines()
@@ -332,6 +400,14 @@ def git_branch(repo:pathlib.Path) -> Tuple[str]:
 
 def get_branch_cmd() -> List[str]:
     return ['git', 'branch']
+
+
+def git_reset_hard(repo:pathlib.Path, ref:str):
+    check_output(get_reset_hard_cmd(ref), repo=repo)
+
+
+def get_reset_hard_cmd(ref:str) -> List[str]:
+    return ['git', 'reset', '--hard', ref]
 
 
 def process_ipynb(src_path:pathlib.Path):
@@ -345,22 +421,25 @@ def process_ipynb(src_path:pathlib.Path):
     with tempfile.TemporaryDirectory() as tmpdir:
         tmpdir = pathlib.Path(tmpdir)
 
-        src_after_ipynb_path = tmpdir / (src_path.name)
+        ipynb_without_button = tmpdir / src_path.name
 
-        remove_colab_button(src_path, src_after_ipynb_path)
+        remove_colab_button(src_path, ipynb_without_button)
+
+        py_path = get_py_path(src_path.parent, src_path)
 
         with tempfile.TemporaryFile() as my_null:
-            check_output(get_nbconvert_ipynb_cmd(src_path, src_after_ipynb_path), stderr=my_null)
+            check_output(get_nbconvert_python_cmd(ipynb_without_button, py_path), stderr=my_null)
 
-    remove_metadata_id(src_path, src_path)
+        # delete ipynb file
+        src_path.unlink()
 
 
 def get_nbconvert_ipynb_cmd(src_path:pathlib.Path, src_after_ipynb_path:pathlib.Path) -> List[str]:
     return ['jupyter', 'nbconvert', "--to", "notebook", str(src_after_ipynb_path), "--output", str(src_path)]
 
 
-def remove_metadata_id(src_path:pathlib.Path, dest_path:pathlib.Path):
-    ipynb_json = json.loads(src_path.read_text())
+def remove_metadata_id(src_path:pathlib.Path, dest_path:pathlib.Path, encoding:str="utf-8"):
+    ipynb_json = json.loads(src_path.read_text(encoding=encoding))
 
     for cell in ipynb_json["cells"]:
         if "metadata" in cell:
@@ -398,7 +477,20 @@ def verify_processed_ipynb__without_colab_links(src_before_ipynb_path:pathlib.Pa
     return result
 
 
-def verify_processed_ipynb(src_ipynb_path:pathlib.Path, dest_ipynb_path:pathlib.Path) -> bool:
+def get_py_path(folder_path:pathlib.Path, ipynb_full_path:pathlib.Path) -> pathlib.Path:
+    """
+    Get the path of the python file that will be generated from the ipynb file
+    """
+    assert isinstance(folder_path, pathlib.Path)
+    assert folder_path.exists()
+    assert folder_path.is_dir()
+
+    assert isinstance(ipynb_full_path, pathlib.Path)
+
+    return folder_path / (ipynb_full_path.stem + '.py')
+
+
+def verify_processed_ipynb(src_ipynb_path:pathlib.Path, dest_ipynb_path:pathlib.Path, encoding:str="utf-8") -> bool:
     """
     Verify that the processed ipynb is the equivalent to the original
     """
@@ -412,8 +504,9 @@ def verify_processed_ipynb(src_ipynb_path:pathlib.Path, dest_ipynb_path:pathlib.
 
     with tempfile.TemporaryDirectory() as tmpdir:
         tmpdir = pathlib.Path(tmpdir)
-        src_py_path = tmpdir / (src_ipynb_path.stem + '.py')
-        dest_py_path = tmpdir / (dest_ipynb_path.stem + '.py')
+
+        src_py_path = get_py_path(tmpdir, src_ipynb_path)
+        dest_py_path = get_py_path(tmpdir, dest_ipynb_path)
 
         check_output(get_nbconvert_python_cmd(src_ipynb_path, src_py_path))
         check_output(get_nbconvert_python_cmd(dest_ipynb_path, dest_py_path))
@@ -424,8 +517,8 @@ def verify_processed_ipynb(src_ipynb_path:pathlib.Path, dest_ipynb_path:pathlib.
         assert dest_py_path.exists()
         assert dest_py_path.is_file()
 
-        txt1 = src_py_path.read_text()
-        txt2 = dest_py_path.read_text()
+        txt1 = src_py_path.read_text(encoding=encoding)
+        txt2 = dest_py_path.read_text(encoding=encoding)
 
     return txt1 == txt2
 
@@ -434,12 +527,12 @@ def get_nbconvert_python_cmd(ipynb_path:pathlib.Path, py_path:pathlib.Path) -> L
     return ['jupyter', 'nbconvert', "--to", "python", str(ipynb_path), "--output", str(py_path)]
 
 
-def remove_colab_button(src_ipynb_path:pathlib.Path, dest_ipynb_path:pathlib.Path):
+def remove_colab_button(src_ipynb_path:pathlib.Path, dest_ipynb_path:pathlib.Path, encoding:str="utf-8"):
     assert src_ipynb_path.exists()
     assert src_ipynb_path.is_file()
     assert src_ipynb_path.suffix == '.ipynb'
 
-    ipynb_json = json.loads(src_ipynb_path.read_text())
+    ipynb_json = json.loads(src_ipynb_path.read_text(encoding=encoding))
 
     assert 'cells' in ipynb_json
     assert isinstance(ipynb_json['cells'], list)
