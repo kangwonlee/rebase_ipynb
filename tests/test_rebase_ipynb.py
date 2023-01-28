@@ -160,6 +160,13 @@ def repo_info(request) -> Repo_Info:
 
         start_parent = all_sha_inv_org[len(request.param['commits_original'])]
 
+        commit_info_inverted = list(
+            map(
+                lambda x: rebase_ipynb.git_show_info(test_repo_path, x),
+                all_sha_inv_org[:len(request.param['commits_original'])]
+            )
+        )
+
         yield {
             'path': test_repo_path,
             'first': request.param['first'],
@@ -168,6 +175,7 @@ def repo_info(request) -> Repo_Info:
             'all_sha_inv_org': all_sha_inv_org,
             'chg': request.param['chg'],
             'start_parent': start_parent,
+            'commit_info_inverted': commit_info_inverted,
         }
 
 
@@ -476,12 +484,6 @@ def test_process_commits(repo_info:Repo_Info, new_branch:str):
     all_sha_inv_org = repo_info['all_sha_inv_org']
 
     n_sha_inv_org = all_sha_inv_org[:len(commits_original)]
-
-    # commit info
-    commit_info_inverted = []
-
-    for commit in commits_original:
-        commit_info_inverted.append(rebase_ipynb.git_show_info(repo, commit))
 
     try:
 
