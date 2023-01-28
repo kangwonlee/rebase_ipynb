@@ -150,12 +150,24 @@ def repo_info(request) -> Repo_Info:
         test_repo_git_path = test_repo_path / '.git'
         assert test_repo_git_path.exists(), test_repo_path.absolute()
 
+        # all commits until the last_commit
+        all_sha_inv_org = tuple(
+            subprocess.check_output(
+                ['git', 'log', '--pretty=format:%H', request.param['last']],
+                cwd=test_repo_path, encoding="utf-8"
+            ).splitlines()
+        )
+
+        start_parent = all_sha_inv_org[len(request.param['commits_original'])]
+
         yield {
             'path': test_repo_path,
             'first': request.param['first'],
             'last': request.param['last'],
             'commits_original': request.param['commits_original'],
+            'all_sha_inv_org': all_sha_inv_org,
             'chg': request.param['chg'],
+            'start_parent': start_parent,
         }
 
 
@@ -424,49 +436,46 @@ def test_fixture_first_last_commit(repo_info:Repo_Info):
     assert sha_log[-1].startswith(repo_info["last"]), (sha_log, repo_info["last"])
 
 
-def test_process_commits(repo_info:Repo_Info):
+def test_fixture_org_sha_log(repo_info:Repo_Info):
+    """
+    Does the full sha list includes all short sha?
+    Is start_parent not in the short list?
+    """
+    sha_org_short = list(repo_info["commits_original"])
+    sha_org_short.reverse()
+
+    for sha_from_short_list, sha_from_long_list in zip(
+        tuple(sha_org_short),
+        repo_info['all_sha_inv_org']
+    ):
+        assert sha_from_long_list.startswith(sha_from_short_list)
+        assert not sha_from_long_list.startswith(repo_info['start_parent'])
+
+    assert repo_info['start_parent'] == repo_info['all_sha_inv_org'][len(sha_org_short)]
+
+
+@pytest.fixture
+def new_branch() -> str:
+    """
+    new branch name with a random integer
+    """
+    return f'test_branch_{random.randint(0, (2**4)**8):08x}'
+
+
+def test_process_commits(repo_info:Repo_Info, new_branch:str):
 
     repo = repo_info["path"]
 
     first_commit = repo_info["first"]
     last_commit = repo_info["last"]
 
-    # get the commit before the first commit
-    start_parent = rebase_ipynb.git_parent_sha(repo, first_commit)
-
     # get the commits between the first and the last commit
-    commits_original = rebase_ipynb.git_log_hash(repo, start_parent, last_commit)
+    commits_original = repo_info["commits_original"]
 
     # all commits until the last_commit
-    all_sha_inv_org = subprocess.check_output(
-        ['git', 'log', '--pretty=format:%H', last_commit],
-        cwd=repo, encoding="utf-8"
-    ).splitlines()
-
-    # first commit in the all_sha_inv_org
-    assert all_sha_inv_org[len(commits_original)-1].startswith(first_commit)
+    all_sha_inv_org = repo_info['all_sha_inv_org']
 
     n_sha_inv_org = all_sha_inv_org[:len(commits_original)]
-
-    assert set(n_sha_inv_org) == set(commits_original)
-
-    # are the commits in the list?
-    assert any(
-        map(
-            lambda x: x.startswith(first_commit),
-            commits_original
-        )
-    ), f"first commit {first_commit} not found in {commits_original}"
-
-    assert any(
-        map(
-            lambda x: x.startswith(last_commit),
-            commits_original
-        )
-    ), f"last commit {last_commit} not found in {commits_original}"
-
-    # new branch name with a random integer
-    new_branch = f'test_branch_{random.randint(0, (2**4)**8):08x}'
 
     # commit info
     commit_info_inverted = []
