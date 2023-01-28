@@ -413,6 +413,17 @@ def test_git_parent_sha(repo_info:Repo_Info):
     assert result.startswith(commits_original[-2])
 
 
+def test_fixture_first_last_commit(repo_info:Repo_Info):
+    # get the commit before the first commit
+    start_parent = rebase_ipynb.git_parent_sha(repo_info["path"], repo_info["first"])
+
+    # get the commits between the first and the last commit
+    sha_log = rebase_ipynb.git_log_hash(repo_info["path"], start_parent, repo_info["last"])
+
+    assert sha_log[0].startswith(repo_info["first"]), (repo_info["first"], sha_log)
+    assert sha_log[-1].startswith(repo_info["last"]), (sha_log, repo_info["last"])
+
+
 def test_process_commits(repo_info:Repo_Info):
 
     repo = repo_info["path"]
@@ -425,9 +436,6 @@ def test_process_commits(repo_info:Repo_Info):
 
     # get the commits between the first and the last commit
     commits_original = rebase_ipynb.git_log_hash(repo, start_parent, last_commit)
-
-    assert commits_original[0].startswith(first_commit), (first_commit, commits_original)
-    assert commits_original[-1].startswith(last_commit), (commits_original, last_commit)
 
     # all commits until the last_commit
     all_sha_inv_org = subprocess.check_output(
