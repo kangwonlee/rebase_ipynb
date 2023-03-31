@@ -366,13 +366,14 @@ def get_nbconvert_ipynb_cmd(input_path:pathlib.Path, output_path:pathlib.Path) -
     return ['jupyter', 'nbconvert', "--to", "notebook", str(input_path), "--output", str(output_path)]
 
 
-def remove_metadata_id(src_path:pathlib.Path, dest_path:pathlib.Path):
+def remove_metadata_id(src_path:pathlib.Path, dest_path:pathlib.Path, allowed:Tuple[str]=('view-in-github',)):
     ipynb_json = json.loads(src_path.read_text())
 
     for cell in ipynb_json["cells"]:
         if "metadata" in cell:
             if "id" in cell["metadata"]:
-                del cell["metadata"]["id"]
+                if cell["metadata"]["id"] not in allowed:
+                    del cell["metadata"]["id"]
 
     with dest_path.open('w') as f:
         json.dump(ipynb_json, f, indent=4)
