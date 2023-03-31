@@ -371,9 +371,16 @@ def remove_id_from_file(src_path:pathlib.Path, dest_path:pathlib.Path, allowed:T
 
     for cell in ipynb_json["cells"]:
         remove_metadata_id_from_cell(cell, allowed)
+        remove_id_from_markdown_cell(cell)
 
     with dest_path.open('w') as f:
         json.dump(ipynb_json, f, indent=4)
+
+
+def remove_id_from_markdown_cell(cell:nbformat.NotebookNode):
+    if "markdown" == cell.get("cell_type"):
+        if "id" in cell:
+            del cell["id"]
 
 
 def remove_metadata_id_from_cell(cell:nbformat.NotebookNode, allowed:Tuple[str]=('view-in-github',)):
