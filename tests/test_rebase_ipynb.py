@@ -634,5 +634,22 @@ def test_remove_id_from_cell__code_cell_2():
     assert "id" not in cell
 
 
+def test_remove_id_from_file__id_sample():
+    input_path = pathlib.Path(__file__).parent / "id_sample.ipynb"
+    assert input_path.exists(), input_path
+
+    with tempfile.TemporaryDirectory() as folder:
+        output_path = pathlib.Path(folder) / "id_sample.ipynb"
+
+        # function under test
+        rebase_ipynb.remove_id_from_file(input_path, output_path)
+
+        # read the output file
+        nb = json.loads(output_path.read_text())
+
+    for cell in nb["cells"]:
+        assert "id" not in cell
+
+
 if '__main__' == __name__:
     pytest.main([__file__])
