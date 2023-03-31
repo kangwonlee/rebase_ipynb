@@ -13,6 +13,10 @@ Result
     * temporary branch with all ipynb files in the unified format
     * remove all hash info
 
+Example
+=======
+    $ python rebase_ipynb.py --repo /home/username/repo --first_commit 1234567890 --last_commit 0987654321 --new_branch temp_branch
+
 """
 
 import argparse
@@ -26,6 +30,8 @@ import tempfile
 import subprocess
 
 from typing import Dict, List, Tuple
+
+import nbformat
 
 
 def process_commits(repo:pathlib.Path, first_commit:str, last_commit:str, new_branch:str):
@@ -349,24 +355,7 @@ def process_ipynb(src_path:pathlib.Path):
 
         remove_colab_button(src_path, src_after_ipynb_path)
 
-        remove_ipynb_id(src_after_ipynb_path, src_path)
-
     remove_metadata_id(src_path, src_path)
-
-
-def remove_ipynb_id(src_ipynb_path:pathlib.Path, dest_ipynb_path:pathlib.Path):
-    ipynb_json = json.loads(src_ipynb_path.read_text())
-
-    b_write = False
-
-    for cell in ipynb_json['cells']:
-        if "id" in cell["metadata"]:
-            del cell["metadata"]["id"]
-            b_write = True
-
-    if b_write:
-        with dest_ipynb_path.open('w') as f:
-            json.dump(ipynb_json, f)
 
 
 def jupyter_nbconvert_notebook(input_path:pathlib.Path, output_path:pathlib.Path, my_null):
@@ -386,7 +375,7 @@ def remove_metadata_id(src_path:pathlib.Path, dest_path:pathlib.Path):
                 del cell["metadata"]["id"]
 
     with dest_path.open('w') as f:
-        json.dump(ipynb_json, f)
+        json.dump(ipynb_json, f, indent=4)
 
 
 def verify_processed_ipynb__without_colab_links(src_before_ipynb_path:pathlib.Path, dest_before_ipynb_path:pathlib.Path) -> bool:
@@ -474,7 +463,7 @@ def remove_colab_button(src_ipynb_path:pathlib.Path, dest_ipynb_path:pathlib.Pat
                 ipynb_json['cells'].pop(0)
 
     with dest_ipynb_path.open('w') as f:
-        json.dump(ipynb_json, f)
+        json.dump(ipynb_json, f, indent=4)
 
 
 def get_commiter_info_hash(repo, sha:str):
