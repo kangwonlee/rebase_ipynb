@@ -349,10 +349,24 @@ def process_ipynb(src_path:pathlib.Path):
 
         remove_colab_button(src_path, src_after_ipynb_path)
 
-        with tempfile.TemporaryFile() as my_null:
-            jupyter_nbconvert_notebook(src_after_ipynb_path, src_path, my_null)
+        remove_ipynb_id(src_after_ipynb_path, src_path)
 
     remove_metadata_id(src_path, src_path)
+
+
+def remove_ipynb_id(src_ipynb_path:pathlib.Path, dest_ipynb_path:pathlib.Path):
+    ipynb_json = json.loads(src_ipynb_path.read_text())
+
+    b_write = False
+
+    for cell in ipynb_json['cells']:
+        if "id" in cell["metadata"]:
+            del cell["metadata"]["id"]
+            b_write = True
+
+    if b_write:
+        with dest_ipynb_path.open('w') as f:
+            json.dump(ipynb_json, f)
 
 
 def jupyter_nbconvert_notebook(input_path:pathlib.Path, output_path:pathlib.Path, my_null):
