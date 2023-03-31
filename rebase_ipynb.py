@@ -372,6 +372,7 @@ def remove_id_from_file(src_path:pathlib.Path, dest_path:pathlib.Path, allowed:T
     for cell in ipynb_json["cells"]:
         remove_metadata_id_from_cell(cell, allowed)
         remove_id_from_markdown_cell(cell)
+        remove_output_id_from_cell(cell)
 
     with dest_path.open('w') as f:
         json.dump(ipynb_json, f, indent=4)
@@ -383,12 +384,19 @@ def remove_id_from_markdown_cell(cell:nbformat.NotebookNode):
             del cell["id"]
 
 
+def remove_output_id_from_cell(cell:nbformat.NotebookNode, allowed:Tuple[str]=('view-in-github',)):
+    if "metadata" in cell:
+        if "colab" in cell["metadata"]:
+            del cell["metadata"]["colab"]
+        if "outputId" in cell["metadata"]:
+            del cell["metadata"]["outputId"]
+
+
 def remove_metadata_id_from_cell(cell:nbformat.NotebookNode, allowed:Tuple[str]=('view-in-github',)):
     if "metadata" in cell:
         if "id" in cell["metadata"]:
             if cell["metadata"]["id"] not in allowed:
                 del cell["metadata"]["id"]
-
 
 def verify_processed_ipynb__without_colab_links(src_before_ipynb_path:pathlib.Path, dest_before_ipynb_path:pathlib.Path) -> bool:
     """
