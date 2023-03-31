@@ -374,6 +374,9 @@ def remove_id_from_file(src_path:pathlib.Path, dest_path:pathlib.Path, allowed:T
         remove_id_from_cell(cell)
         remove_output_id_from_cell(cell)
 
+    for cell in ipynb_json["cells"]:
+        assert "id" not in cell
+
     with dest_path.open('w') as f:
         json.dump(ipynb_json, f, indent=4)
 

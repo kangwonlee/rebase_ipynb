@@ -640,6 +640,7 @@ def test_remove_id_from_file__id_sample():
 
     with tempfile.TemporaryDirectory() as folder:
         output_path = pathlib.Path(folder) / "id_sample.ipynb"
+        assert not output_path.exists(), output_path
 
         # function under test
         rebase_ipynb.remove_id_from_file(input_path, output_path)
