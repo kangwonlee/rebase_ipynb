@@ -346,7 +346,7 @@ def test_remove_metadata_id__eq_local():
 
         dest_ipynb_path = tmpdir_path / 'eq_local_with_button.ipynb'
 
-        rebase_ipynb.remove_metadata_id(src_ipynb_path, dest_ipynb_path)
+        rebase_ipynb.remove_id_from_file(src_ipynb_path, dest_ipynb_path)
 
         dest_ipynb_json = json.loads(dest_ipynb_path.read_text())
 

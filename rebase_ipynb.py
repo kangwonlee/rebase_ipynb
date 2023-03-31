@@ -355,7 +355,7 @@ def process_ipynb(src_path:pathlib.Path):
 
         remove_colab_button(src_path, src_after_ipynb_path)
 
-    remove_metadata_id(src_path, src_path)
+    remove_id_from_file(src_path, src_path)
 
 
 def jupyter_nbconvert_notebook(input_path:pathlib.Path, output_path:pathlib.Path, my_null):
@@ -366,17 +366,21 @@ def get_nbconvert_ipynb_cmd(input_path:pathlib.Path, output_path:pathlib.Path) -
     return ['jupyter', 'nbconvert', "--to", "notebook", str(input_path), "--output", str(output_path)]
 
 
-def remove_metadata_id(src_path:pathlib.Path, dest_path:pathlib.Path, allowed:Tuple[str]=('view-in-github',)):
+def remove_id_from_file(src_path:pathlib.Path, dest_path:pathlib.Path, allowed:Tuple[str]=('view-in-github',)):
     ipynb_json = json.loads(src_path.read_text())
 
     for cell in ipynb_json["cells"]:
-        if "metadata" in cell:
-            if "id" in cell["metadata"]:
-                if cell["metadata"]["id"] not in allowed:
-                    del cell["metadata"]["id"]
+        remove_metadata_id_from_cell(cell, allowed)
 
     with dest_path.open('w') as f:
         json.dump(ipynb_json, f, indent=4)
+
+
+def remove_metadata_id_from_cell(cell:nbformat.NotebookNode, allowed:Tuple[str]=('view-in-github',)):
+    if "metadata" in cell:
+        if "id" in cell["metadata"]:
+            if cell["metadata"]["id"] not in allowed:
+                del cell["metadata"]["id"]
 
 
 def verify_processed_ipynb__without_colab_links(src_before_ipynb_path:pathlib.Path, dest_before_ipynb_path:pathlib.Path) -> bool:
