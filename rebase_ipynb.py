@@ -371,15 +371,15 @@ def remove_id_from_file(src_path:pathlib.Path, dest_path:pathlib.Path, allowed:T
 
     for cell in ipynb_json["cells"]:
         remove_metadata_id_from_cell(cell, allowed)
-        remove_id_from_markdown_cell(cell)
+        remove_id_from_cell(cell)
         remove_output_id_from_cell(cell)
 
     with dest_path.open('w') as f:
         json.dump(ipynb_json, f, indent=4)
 
 
-def remove_id_from_markdown_cell(cell:nbformat.NotebookNode):
-    if "markdown" == cell.get("cell_type"):
+def remove_id_from_cell(cell:nbformat.NotebookNode):
+    if cell.get("cell_type") in ("markdown", "code"):
         if "id" in cell:
             del cell["id"]
 
