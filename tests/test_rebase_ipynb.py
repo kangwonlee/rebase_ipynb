@@ -615,5 +615,24 @@ def test_remove_id_from_cell__code_cell():
     assert "id" not in cell
 
 
+def test_remove_id_from_cell__code_cell_2():
+    """Test the removal of the id from the markdown cell."""
+    cell = {
+        "cell_type": "code",
+        "id": "d3f70e2f",
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "import numpy as np\n",
+            "import scipy.optimize as so\n",
+            "\n"
+        ]
+    }
+
+    rebase_ipynb.remove_id_from_cell(cell)
+
+    assert "id" not in cell
+
+
 if '__main__' == __name__:
     pytest.main([__file__])
