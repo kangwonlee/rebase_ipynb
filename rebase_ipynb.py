@@ -350,13 +350,17 @@ def process_ipynb(src_path:pathlib.Path):
         remove_colab_button(src_path, src_after_ipynb_path)
 
         with tempfile.TemporaryFile() as my_null:
-            check_output(get_nbconvert_ipynb_cmd(src_path, src_after_ipynb_path), stderr=my_null)
+            jupyter_nbconvert_notebook(src_after_ipynb_path, src_path, my_null)
 
     remove_metadata_id(src_path, src_path)
 
 
-def get_nbconvert_ipynb_cmd(src_path:pathlib.Path, src_after_ipynb_path:pathlib.Path) -> List[str]:
-    return ['jupyter', 'nbconvert', "--to", "notebook", str(src_after_ipynb_path), "--output", str(src_path)]
+def jupyter_nbconvert_notebook(input_path:pathlib.Path, output_path:pathlib.Path, my_null):
+    check_output(get_nbconvert_ipynb_cmd(input_path, output_path), stderr=my_null)
+
+
+def get_nbconvert_ipynb_cmd(input_path:pathlib.Path, output_path:pathlib.Path) -> List[str]:
+    return ['jupyter', 'nbconvert', "--to", "notebook", str(input_path), "--output", str(output_path)]
 
 
 def remove_metadata_id(src_path:pathlib.Path, dest_path:pathlib.Path):
