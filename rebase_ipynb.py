@@ -398,6 +398,7 @@ def remove_metadata_id_from_cell(cell:nbformat.NotebookNode, allowed:Tuple[str]=
             if cell["metadata"]["id"] not in allowed:
                 del cell["metadata"]["id"]
 
+
 def verify_processed_ipynb__without_colab_links(src_before_ipynb_path:pathlib.Path, dest_before_ipynb_path:pathlib.Path) -> bool:
     """
     After removing the possible top link,

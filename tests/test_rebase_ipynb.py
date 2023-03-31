@@ -575,5 +575,24 @@ def test_process_commits(repo_info:Repo_Info):
             )
 
 
+def test_remove_id_from_markdown_cell():
+    """Test the removal of the id from the markdown cell."""
+    cell = {
+        "cell_type": "markdown",
+        "id": "delete_this",
+        "metadata": {
+            "colab_type": "text",
+            "id": "view-in-github"
+        },
+        "source": [
+            '''<a href="colab" target="parent"><img src="svg" alt="Colab"></a>'''
+        ]
+    }
+
+    rebase_ipynb.remove_id_from_markdown_cell(cell)
+
+    assert "id" not in cell
+
+
 if '__main__' == __name__:
     pytest.main([__file__])
