@@ -634,9 +634,15 @@ def test_remove_id_from_cell__code_cell_2():
     assert "id" not in cell
 
 
-def test_remove_id_from_file__id_sample():
+@pytest.fixture
+def id_sample_path():
     input_path = pathlib.Path(__file__).parent / "id_sample.ipynb"
     assert input_path.exists(), input_path
+    return input_path
+
+
+def test_remove_id_from_file__id_sample(id_sample_path):
+    input_path = id_sample_path
 
     with tempfile.TemporaryDirectory() as folder:
         output_path = pathlib.Path(folder) / "id_sample.ipynb"
@@ -650,6 +656,23 @@ def test_remove_id_from_file__id_sample():
 
     for cell in nb["cells"]:
         assert "id" not in cell
+
+
+def test_process_ipynb__id_sample__encoding(id_sample_path):
+    input_path = id_sample_path
+
+    with tempfile.TemporaryDirectory() as folder:
+        output_path = pathlib.Path(folder) / "id_sample.ipynb"
+        assert not output_path.exists(), output_path
+
+        shutil.copy(input_path, output_path)
+
+        # function under test
+        rebase_ipynb.process_ipynb(output_path)
+
+        nb = json.loads(output_path.read_text())
+
+    assert "최적화" in nb["cells"][3]["source"][0]
 
 
 if '__main__' == __name__:
