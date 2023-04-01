@@ -13,6 +13,10 @@ Result
     * temporary branch with all ipynb files in the unified format
     * remove all hash info
 
+Example
+=======
+    $ python rebase_ipynb.py --repo /home/username/repo --first_commit 1234567890 --last_commit 0987654321 --new_branch temp_branch
+
 """
 
 import argparse
@@ -26,6 +30,8 @@ import tempfile
 import subprocess
 
 from typing import Dict, List, Tuple
+
+import nbformat
 
 
 def process_commits(repo:pathlib.Path, first_commit:str, last_commit:str, new_branch:str):
@@ -349,26 +355,51 @@ def process_ipynb(src_path:pathlib.Path):
 
         remove_colab_button(src_path, src_after_ipynb_path)
 
-        with tempfile.TemporaryFile() as my_null:
-            check_output(get_nbconvert_ipynb_cmd(src_path, src_after_ipynb_path), stderr=my_null)
-
-    remove_metadata_id(src_path, src_path)
+    remove_id_from_file(src_path, src_path)
 
 
-def get_nbconvert_ipynb_cmd(src_path:pathlib.Path, src_after_ipynb_path:pathlib.Path) -> List[str]:
-    return ['jupyter', 'nbconvert', "--to", "notebook", str(src_after_ipynb_path), "--output", str(src_path)]
+def jupyter_nbconvert_notebook(input_path:pathlib.Path, output_path:pathlib.Path, my_null):
+    check_output(get_nbconvert_ipynb_cmd(input_path, output_path), stderr=my_null)
 
 
-def remove_metadata_id(src_path:pathlib.Path, dest_path:pathlib.Path):
+def get_nbconvert_ipynb_cmd(input_path:pathlib.Path, output_path:pathlib.Path) -> List[str]:
+    return ['jupyter', 'nbconvert', "--to", "notebook", str(input_path), "--output", str(output_path)]
+
+
+def remove_id_from_file(src_path:pathlib.Path, dest_path:pathlib.Path, allowed:Tuple[str]=('view-in-github',)):
     ipynb_json = json.loads(src_path.read_text())
 
     for cell in ipynb_json["cells"]:
-        if "metadata" in cell:
-            if "id" in cell["metadata"]:
-                del cell["metadata"]["id"]
+        remove_metadata_id_from_cell(cell, allowed)
+        remove_id_from_cell(cell)
+        remove_output_id_from_cell(cell)
 
-    with dest_path.open('w') as f:
-        json.dump(ipynb_json, f)
+    for cell in ipynb_json["cells"]:
+        assert "id" not in cell
+
+    with dest_path.open('w', encoding="utf-8") as f:
+        json.dump(ipynb_json, f, indent=1, ensure_ascii=False)
+
+
+def remove_id_from_cell(cell:nbformat.NotebookNode):
+    if cell.get("cell_type") in ("markdown", "code"):
+        if "id" in cell:
+            del cell["id"]
+
+
+def remove_output_id_from_cell(cell:nbformat.NotebookNode, allowed:Tuple[str]=('view-in-github',)):
+    if "metadata" in cell:
+        if "colab" in cell["metadata"]:
+            del cell["metadata"]["colab"]
+        if "outputId" in cell["metadata"]:
+            del cell["metadata"]["outputId"]
+
+
+def remove_metadata_id_from_cell(cell:nbformat.NotebookNode, allowed:Tuple[str]=('view-in-github',)):
+    if "metadata" in cell:
+        if "id" in cell["metadata"]:
+            if cell["metadata"]["id"] not in allowed:
+                del cell["metadata"]["id"]
 
 
 def verify_processed_ipynb__without_colab_links(src_before_ipynb_path:pathlib.Path, dest_before_ipynb_path:pathlib.Path) -> bool:
@@ -455,8 +486,8 @@ def remove_colab_button(src_ipynb_path:pathlib.Path, dest_ipynb_path:pathlib.Pat
             if link_text in ipynb_json['cells'][0]['source'][0]:
                 ipynb_json['cells'].pop(0)
 
-    with dest_ipynb_path.open('w') as f:
-        json.dump(ipynb_json, f)
+    with dest_ipynb_path.open('w', encoding="utf-8") as f:
+        json.dump(ipynb_json, f, indent=1, ensure_ascii=False)
 
 
 def get_commiter_info_hash(repo, sha:str):

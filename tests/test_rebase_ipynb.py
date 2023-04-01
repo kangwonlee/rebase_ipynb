@@ -346,7 +346,7 @@ def test_remove_metadata_id__eq_local():
 
         dest_ipynb_path = tmpdir_path / 'eq_local_with_button.ipynb'
 
-        rebase_ipynb.remove_metadata_id(src_ipynb_path, dest_ipynb_path)
+        rebase_ipynb.remove_id_from_file(src_ipynb_path, dest_ipynb_path)
 
         dest_ipynb_json = json.loads(dest_ipynb_path.read_text())
 
@@ -573,6 +573,106 @@ def test_process_commits(repo_info:Repo_Info):
                 ['git', 'branch', '-D', new_branch],
                 cwd=repo,
             )
+
+
+def test_remove_id_from_cell__markdown_cell():
+    """Test the removal of the id from the markdown cell."""
+    cell = {
+        "cell_type": "markdown",
+        "id": "delete_this",
+        "metadata": {
+            "colab_type": "text",
+            "id": "view-in-github"
+        },
+        "source": [
+            '''<a href="colab" target="parent"><img src="svg" alt="Colab"></a>'''
+        ]
+    }
+
+    rebase_ipynb.remove_id_from_cell(cell)
+
+    assert "id" not in cell
+
+
+def test_remove_id_from_cell__code_cell():
+    """Test the removal of the id from the markdown cell."""
+    cell = {
+        "cell_type": "code",
+        "id": "b6dfb301",
+        "metadata": {},
+        "outputs": [],
+        "source": [
+         "# ref : https://matplotlib.org/stable/gallery/\n",
+         "import matplotlib.pyplot as plt\n",
+         "from mpl_toolkits.mplot3d import Axes3D\n",
+         "from matplotlib import cm\n",
+         "\n"
+        ]
+    }
+
+    rebase_ipynb.remove_id_from_cell(cell)
+
+    assert "id" not in cell
+
+
+def test_remove_id_from_cell__code_cell_2():
+    """Test the removal of the id from the markdown cell."""
+    cell = {
+        "cell_type": "code",
+        "id": "d3f70e2f",
+        "metadata": {},
+        "outputs": [],
+        "source": [
+            "import numpy as np\n",
+            "import scipy.optimize as so\n",
+            "\n"
+        ]
+    }
+
+    rebase_ipynb.remove_id_from_cell(cell)
+
+    assert "id" not in cell
+
+
+@pytest.fixture
+def id_sample_path():
+    input_path = pathlib.Path(__file__).parent / "id_sample.ipynb"
+    assert input_path.exists(), input_path
+    return input_path
+
+
+def test_remove_id_from_file__id_sample(id_sample_path):
+    input_path = id_sample_path
+
+    with tempfile.TemporaryDirectory() as folder:
+        output_path = pathlib.Path(folder) / "id_sample.ipynb"
+        assert not output_path.exists(), output_path
+
+        # function under test
+        rebase_ipynb.remove_id_from_file(input_path, output_path)
+
+        # read the output file
+        nb = json.loads(output_path.read_text())
+
+    for cell in nb["cells"]:
+        assert "id" not in cell
+
+
+def test_process_ipynb__id_sample__encoding(id_sample_path):
+    input_path = id_sample_path
+
+    with tempfile.TemporaryDirectory() as folder:
+        output_path = pathlib.Path(folder) / "id_sample.ipynb"
+        assert not output_path.exists(), output_path
+
+        shutil.copy(input_path, output_path)
+
+        # function under test
+        rebase_ipynb.process_ipynb(output_path)
+
+        nb = json.loads(output_path.read_text())
+
+    assert "최적화" in nb["cells"][3]["source"][0]
 
 
 if '__main__' == __name__:
