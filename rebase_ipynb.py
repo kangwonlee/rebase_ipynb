@@ -378,7 +378,7 @@ def remove_id_from_file(src_path:pathlib.Path, dest_path:pathlib.Path, allowed:T
         assert "id" not in cell
 
     with dest_path.open('w', encoding="utf-8") as f:
-        json.dump(ipynb_json, f, indent=4, ensure_ascii=False)
+        json.dump(ipynb_json, f, indent=1, ensure_ascii=False)
 
 
 def remove_id_from_cell(cell:nbformat.NotebookNode):
@@ -487,7 +487,7 @@ def remove_colab_button(src_ipynb_path:pathlib.Path, dest_ipynb_path:pathlib.Pat
                 ipynb_json['cells'].pop(0)
 
     with dest_ipynb_path.open('w', encoding="utf-8") as f:
-        json.dump(ipynb_json, f, indent=4, ensure_ascii=False)
+        json.dump(ipynb_json, f, indent=1, ensure_ascii=False)
 
 
 def get_commiter_info_hash(repo, sha:str):
